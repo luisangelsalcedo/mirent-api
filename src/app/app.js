@@ -3,6 +3,7 @@ import express from "express";
 // environment
 import "./environment.js";
 // database
+import "./database.js";
 
 const app = express();
 // middleware
