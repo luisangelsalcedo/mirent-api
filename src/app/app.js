@@ -1,7 +1,7 @@
 import express from "express";
 
 // environment
-
+import "./environment.js";
 // database
 
 const app = express();
