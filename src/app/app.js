@@ -1,21 +1,21 @@
 import express from "express";
 import userRoutes from "../routes/user.routes.js";
-import propertyRoutes from "../routes/property.routes";
-import agreementRoutes from "../routes/agreement.routes";
-import rentRoutes from "../routes/rent.routes";
-import notificationRoutes from "../routes/notification.routes";
+import propertyRoutes from "../routes/property.routes.js";
+import agreementRoutes from "../routes/agreement.routes.js";
+import rentRoutes from "../routes/rent.routes.js";
+import notificationRoutes from "../routes/notification.routes.js";
 
 // environment
 import "./environment.js";
 // database
 import "./database.js";
-
+// server
 const app = express();
 // middleware
-
+app.use(express.json());
 // routes
 app.get("/", (req, res) => {
-  res.send("hola mundo");
+  res.send("miRent app");
 });
 app.use(userRoutes);
 app.use(propertyRoutes);
