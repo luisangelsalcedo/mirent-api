@@ -10,11 +10,14 @@ import { authentication } from "../middlewares/authentication.js";
 import "./environment.js";
 // database
 import "./database.js";
+
 // server
 const app = express();
+
 // middleware
 app.use(express.json());
 app.all("/api/*", authentication);
+
 // routes
 app.get("/", (req, res) => {
   res.send("miRent app");

@@ -78,3 +78,29 @@ export const validate = (req, res) => {
     res.status(200).json({ payload });
   });
 };
+
+/**
+ * ## Update User
+ * * Update user content. Email is not updatable
+ * @param {ObjectId} req.auth.id - Authenticated User ID
+ * @return {HTTPResponse} - status 200 return {user} | status  return {message}
+ */
+export const update = async (req, res) => {
+  const { id } = req.auth;
+
+  const updatedContent = req.body;
+  if (!Object.keys(updatedContent).length)
+    return res.status(400).json({ message: "Content is required" });
+
+  const { email } = updatedContent;
+  if (email) return res.status(400).json({ message: "email is not updatable" });
+
+  try {
+    const user = await User.findByIdAndUpdate(id, updatedContent, {
+      new: true,
+    });
+    res.status(200).json({ user, notice: "Updated user" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

@@ -12,5 +12,8 @@ router.post("/auth/register", userCtrl.register);
 // validate user authentication token
 router.get("/auth/validate", userCtrl.validate);
 
+// validate user authentication token
+router.put("/api/user", userCtrl.update);
+
 //
 export default router;
