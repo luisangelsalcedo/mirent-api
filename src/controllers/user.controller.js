@@ -46,8 +46,8 @@ export const register = async (req, res) => {
   if (!email) return res.status(400).json({ message: "Email is required" });
   if (!pass) return res.status(400).json({ message: "Password is required" });
 
-  const duplicateUser = await User.findOne({ email });
-  if (duplicateUser) return res.status(400).json({ message: "Duplicate user" });
+  const userExist = await User.findOne({ email });
+  if (userExist) return res.status(400).json({ message: "Duplicate user" });
 
   // implementing bcrypt hash
   const hash = await bcrypt.hash(pass, 10);
