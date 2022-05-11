@@ -1,6 +1,10 @@
 import jwt from "jsonwebtoken";
 import { config } from "../config/index.js";
 
+/**
+ * ## authentication
+ * *
+ */
 export const authentication = (req, res, next) => {
   const auth = req.headers.authorization;
   if (auth) {
