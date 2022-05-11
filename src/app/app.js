@@ -6,8 +6,6 @@ import rentRoutes from "../routes/rent.routes.js";
 import notificationRoutes from "../routes/notification.routes.js";
 import { authentication } from "../middlewares/authentication.js";
 
-// environment
-import "./environment.js";
 // database
 import "./database.js";
 
