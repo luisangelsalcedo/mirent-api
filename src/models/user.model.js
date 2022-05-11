@@ -96,6 +96,22 @@ userSchema.statics.verifyToken = async function (req) {
   });
 };
 /**
+ * * statics
+ */
+userSchema.statics.updateUser = async function (req) {
+  const { user, body } = req;
+
+  if (!Object.keys(body).length) throw errorResponse(422, "empty content");
+  if (body.email) throw errorResponse(403, "email can not be modify");
+
+  return new Promise((resolve, reject) => {
+    this.findByIdAndUpdate(user._id, body, { new: true }, (err, updated) => {
+      if (!err) resolve(updated);
+      else reject(err);
+    });
+  });
+};
+/**
  *
  *
  */

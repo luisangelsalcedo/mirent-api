@@ -1,5 +1,5 @@
 import User from "../models/user.model.js";
-import { successResponse } from "../utils/index.js";
+import { successResponse, errorResponse } from "../utils/index.js";
 
 /**
  * ## Login
@@ -37,4 +37,42 @@ const tokenAuth = async (req, res, next) => {
   }
 };
 
-export { login, createUser, tokenAuth };
+/**
+ * ## findById
+ */
+const findById = async (req, res, next, id) => {
+  try {
+    const user = await User.findById(id);
+    if (!User) throw errorResponse(404, "user not found");
+    req.user = user;
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * ## findOneUser
+ */
+const findOneUser = async (req, res, next) => {
+  try {
+    const { user } = req;
+    successResponse(res, 200, null, user);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * ## updateUser
+ */
+const updateUser = async (req, res, next) => {
+  try {
+    const updated = await User.updateUser(req);
+    successResponse(res, 200, "user has been updated", updated);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export { login, createUser, tokenAuth, findById, findOneUser, updateUser };

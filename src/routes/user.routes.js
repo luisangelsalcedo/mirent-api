@@ -3,6 +3,9 @@ import {
   login,
   createUser,
   tokenAuth,
+  findById,
+  findOneUser,
+  updateUser,
 } from "../controllers/user.controller.js";
 
 const userRouter = Router();
@@ -17,4 +20,7 @@ userRouter.post("/auth/local/register", createUser);
 userRouter.get("/auth/local/validate/:token", tokenAuth);
 
 //
+userRouter.param("id", findById);
+userRouter.route("/api/user/:id").get(findOneUser).put(updateUser);
+
 export default userRouter;
