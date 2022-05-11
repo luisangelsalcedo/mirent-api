@@ -1,19 +1,20 @@
 import { Router } from "express";
-import * as userCtrl from "../controllers/user.controller.js";
+import {
+  login,
+  createUser,
+  tokenAuth,
+} from "../controllers/user.controller.js";
 
-const router = Router();
+const userRouter = Router();
 
 // login
-router.post("/auth/login", userCtrl.login);
+userRouter.post("/auth/local/login", login);
 
 // create a new user
-router.post("/auth/register", userCtrl.register);
+userRouter.post("/auth/local/register", createUser);
 
 // validate user authentication token
-router.get("/auth/validate", userCtrl.validate);
-
-// validate user authentication token
-router.put("/api/user", userCtrl.update);
+userRouter.get("/auth/local/validate/:token", tokenAuth);
 
 //
-export default router;
+export default userRouter;

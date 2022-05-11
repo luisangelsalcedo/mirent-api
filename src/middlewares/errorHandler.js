@@ -2,7 +2,7 @@
  * ## errorHandler
  * * Error handler middleware
  */
-export const errorHandler = (err, req, res) => {
+export const errorHandler = (err, req, res, next) => {
   const { message } = err;
   let { statusCode = 500 } = err;
 
