@@ -2,7 +2,6 @@ import Agreement from "../models/agreement.model.js";
 import { successResponse, errorResponse } from "../utils/index.js";
 
 /**
- * * OK
  ##  createAgreement
  */
 const createAgreement = async (req, res, next) => {
@@ -26,7 +25,6 @@ const getAllAgreement = async (req, res, next) => {
   }
 };
 /**
- * * OK
  * ## getAllAgreementByProperty
  */
 const getAllAgreementByProperty = async (req, res, next) => {
@@ -40,7 +38,6 @@ const getAllAgreementByProperty = async (req, res, next) => {
   }
 };
 /**
- * * OK
  * ## getAgreementById
  */
 const getAgreementById = async (req, res, next, id) => {
@@ -54,7 +51,6 @@ const getAgreementById = async (req, res, next, id) => {
 };
 
 /**
- * * OK
  * ## getOneAgreement
  */
 const getOneAgreement = async (req, res, next) => {
@@ -77,7 +73,6 @@ const updateAgreement = async (req, res, next) => {
   }
 };
 /**
- * * OK
  * ## deleteAgreement
  */
 const deleteAgreement = async (req, res, next) => {
