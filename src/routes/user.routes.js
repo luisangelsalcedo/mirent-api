@@ -3,8 +3,8 @@ import {
   login,
   createUser,
   tokenAuth,
-  findById,
-  findOneUser,
+  getUserById,
+  getOneUser,
   updateUser,
 } from "../controllers/user.controller.js";
 
@@ -19,8 +19,8 @@ userRouter.post("/auth/local/register", createUser);
 // validate user authentication token
 userRouter.get("/auth/local/validate/:token", tokenAuth);
 
-//
-userRouter.param("id", findById);
-userRouter.route("/api/user/:id").get(findOneUser).put(updateUser);
+// users endpoint
+userRouter.param("id", getUserById);
+userRouter.route("/api/user/:id").get(getOneUser).put(updateUser);
 
 export default userRouter;

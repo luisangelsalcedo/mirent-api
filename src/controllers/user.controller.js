@@ -38,12 +38,12 @@ const tokenAuth = async (req, res, next) => {
 };
 
 /**
- * ## findById
+ * ## getUserById
  */
-const findById = async (req, res, next, id) => {
+const getUserById = async (req, res, next, id) => {
   try {
     const user = await User.findById(id);
-    if (!User) throw errorResponse(404, "user not found");
+    if (!user) throw errorResponse(404, "user not found");
     req.user = user;
     next();
   } catch (error) {
@@ -52,9 +52,9 @@ const findById = async (req, res, next, id) => {
 };
 
 /**
- * ## findOneUser
+ * ## getOneUser
  */
-const findOneUser = async (req, res, next) => {
+const getOneUser = async (req, res, next) => {
   try {
     const { user } = req;
     successResponse(res, 200, null, user);
@@ -68,11 +68,11 @@ const findOneUser = async (req, res, next) => {
  */
 const updateUser = async (req, res, next) => {
   try {
-    const updated = await User.updateUser(req);
+    const updated = await User.updateStatics(req);
     successResponse(res, 200, "user has been updated", updated);
   } catch (error) {
     next(error);
   }
 };
 
-export { login, createUser, tokenAuth, findById, findOneUser, updateUser };
+export { login, createUser, tokenAuth, getUserById, getOneUser, updateUser };

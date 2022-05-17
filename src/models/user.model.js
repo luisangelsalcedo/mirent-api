@@ -1,39 +1,14 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { userSchema } from "../schemas/index.js";
 import { generateJWT, errorResponse } from "../utils/index.js";
 import { config } from "../config/index.js";
 
-const { Schema } = mongoose;
-const userSchema = new Schema(
-  {
-    name: String,
-    email: {
-      type: String,
-      lowercase: true,
-      trim: true,
-      required: [true, "is required"],
-      match: [
-        /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,6})+$/,
-        "invalid email address",
-      ],
-    },
-    password: {
-      type: String,
-      required: [true, "is required"],
-    },
-    image: String,
-    auth0: Boolean,
-    dni: String,
-    phone: String,
-  },
-  {
-    versionKey: false,
-    timestamps: true,
-  }
-);
 /**
- * * validate
+ *
+ * * VALIDATE
+ * valida que no exista otro usuario con el mismo email
  */
 userSchema.path("email").validate({
   async validator(email) {
@@ -45,7 +20,8 @@ userSchema.path("email").validate({
   message: "is already taken",
 });
 /**
- * * middleware
+ * * MIDDLEWARE SAVE
+ * encripta el password antes de guardar
  */
 userSchema.pre("save", function (next) {
   bcrypt.hash(this.password, 10, (err, hash) => {
@@ -55,38 +31,50 @@ userSchema.pre("save", function (next) {
   });
 });
 /**
- * * statics
+ * * MIDDLEWARE UPDATE
+ * valida que NO se pueda editar el email
+ */
+userSchema.pre("updateOne", function (next) {
+  const { email } = this._update;
+  if (email) throw errorResponse(403, "email can not be modify");
+  next();
+});
+/**
+ * /////////////////////////////////////////////////////////////////////////////
+ */
+/**
+ *
+ * * USER AUTH
+ *
  */
 userSchema.statics.userAuth = async function (req) {
   const { email, password: pass } = req.body;
   const user = await this.findOne({ email });
 
-  if (user)
-    return new Promise((resolve, reject) => {
-      bcrypt.compare(pass, user.password, (err, result) => {
-        if (err) {
-          reject(errorResponse(422, "password is required"));
-        }
-        if (!result) {
-          reject(errorResponse(403, "password is not correct"));
-        }
-        resolve(generateJWT({ id: user._id, name: user.name }));
-      });
-    });
+  return new Promise((resolve, reject) => {
+    if (!user) reject(errorResponse(404, "user not found"));
+    if (!pass) reject(errorResponse(422, "password is required"));
 
-  throw errorResponse(404, "user not found");
+    bcrypt.compare(pass, user.password, (err, result) => {
+      if (!result) {
+        reject(errorResponse(403, "password is not correct"));
+      }
+      const { _id: id, name } = user;
+      resolve(generateJWT({ id, name }));
+    });
+  });
 };
 /**
- * * statics
+ *
+ * * VERIFY TOKEN
+ *
  */
 userSchema.statics.verifyToken = async function (req) {
   const { token } = req.params;
 
   return new Promise((resolve, reject) => {
     jwt.verify(token, config.token.secret, (err, payload) => {
-      if (err) {
-        reject(errorResponse(401, "invalid token"));
-      }
+      if (err) reject(errorResponse(401, "invalid token"));
 
       this.findById(payload.id).then((user) => {
         if (!user) reject(errorResponse(401, "invalid token"));
@@ -96,23 +84,24 @@ userSchema.statics.verifyToken = async function (req) {
   });
 };
 /**
- * * statics
+ *
+ * * UPDATE
+ *
  */
-userSchema.statics.updateUser = async function (req) {
+userSchema.statics.updateStatics = async function (req) {
   const { user, body } = req;
-
   if (!Object.keys(body).length) throw errorResponse(422, "empty content");
-  if (body.email) throw errorResponse(403, "email can not be modify");
 
-  return new Promise((resolve, reject) => {
-    this.findByIdAndUpdate(user._id, body, { new: true }, (err, updated) => {
-      if (!err) resolve(updated);
-      else reject(err);
-    });
-  });
+  const updated = await user.updateOne(body);
+  if (updated.acknowledged) return this.findById(user._id);
+  return null;
 };
 /**
+ * /////////////////////////////////////////////////////////////////////////////
+ */
+/**
  *
+ * * EXPORT MODEL
  *
  */
 const userModel = mongoose.model("User", userSchema);

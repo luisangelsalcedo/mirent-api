@@ -1,22 +1,26 @@
 import { Router } from "express";
-import * as agreementCtrl from "../controllers/agreement.controller.js";
+import {
+  createAgreement,
+  getAllAgreement,
+  getAllAgreementByProperty,
+  getAgreementById,
+  getOneAgreement,
+  updateAgreement,
+  deleteAgreement,
+} from "../controllers/agreement.controller.js";
 
 const router = Router();
 
-// agreementCtrl create
-router.post("/api/agreement", agreementCtrl.create);
+router.route("/api/agreement").post(createAgreement).get(getAllAgreement);
 
-// agreementCtrl getAll
-router.get("/api/agreement", agreementCtrl.getAll);
+router.param("id", getAgreementById);
 
-// agreementCtrl getById
-router.get("/api/agreement/:id", agreementCtrl.getById);
+router
+  .route("/api/agreement/:id")
+  .get(getOneAgreement)
+  .put(updateAgreement)
+  .delete(deleteAgreement);
 
-// agreementCtrl updateById
-router.put("/api/agreement/:id", agreementCtrl.updateById);
+router.get("/api/agreement/property/:property", getAllAgreementByProperty);
 
-// agreementCtrl deleteById
-router.delete("/api/agreement/:id", agreementCtrl.deleteById);
-
-//
 export default router;
