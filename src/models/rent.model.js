@@ -23,6 +23,7 @@ rentSchema.path("paydate").validate({
   },
   message: "pay date must not be earlier than two days from today",
 });
+
 /**
  * * MIDDLEWARE SAVE
  *  Creamos el name por defecto
@@ -129,7 +130,7 @@ rentSchema.pre("updateOne", async function (next) {
 rentSchema.statics.createByAgreementStatics = async function (req) {
   const { agreement, body } = req;
 
-  if (!agreement.status.signed)
+  if (!agreement?.status.signed)
     throw errorResponse(500, "sign the agreement to generate an rent");
 
   const rent = await this.create({ ...body, agreement: agreement._id });

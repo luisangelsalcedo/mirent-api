@@ -28,7 +28,7 @@ const agreementSchema = new Schema(
     },
     sign: { type: Boolean, default: false },
     rents: [{ type: Schema.Types.ObjectId, ref: "Rent" }],
-    notification: [{ type: Schema.Types.ObjectId, ref: "Notification" }],
+    notifications: [{ type: Schema.Types.ObjectId, ref: "Notification" }],
   },
   {
     versionKey: false,

@@ -60,6 +60,8 @@ propertySchema.pre("updateOne", function (next) {
  */
 propertySchema.pre("updateOne", async function (next) {
   const property = await this.model.findOne(this._conditions);
+  this.property = property;
+
   const { maintenance, available, rented } = property.status;
 
   // MANTENIMIENTO
@@ -67,9 +69,9 @@ propertySchema.pre("updateOne", async function (next) {
 
   // DISPONIBLE
   if (available) {
-    const { status, price, ...res } = this.body;
+    const { status, ...res } = this.body;
     if (Object.keys(res).length)
-      throw errorResponse(403, "only price can be updated");
+      throw errorResponse(403, "only status can be updated");
     next();
   }
 
@@ -89,7 +91,7 @@ propertySchema.pre("updateOne", async function (next) {
 /**
  * actualizamos el estado basandonos en la lista de estados por defecto
  */
-propertySchema.pre("updateOne", async function (next) {
+propertySchema.pre("updateOne", function (next) {
   const { status } = this._update;
   if (status) {
     const key = Object.keys(status)[0];
@@ -98,6 +100,18 @@ propertySchema.pre("updateOne", async function (next) {
 
     const update = { ...propertyDefaultStatus, ...status };
     this._update.status = update;
+  }
+  next();
+});
+/**
+ *
+ */
+propertySchema.pre("updateOne", function (next) {
+  const { price } = this.property;
+  const { status } = this.body;
+
+  if (status?.available) {
+    if (!price) throw errorResponse(422, "price is required");
   }
   next();
 });

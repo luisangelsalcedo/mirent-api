@@ -11,10 +11,14 @@ const rentSchema = new Schema(
   {
     status: { type: Object, default: { ...rentDefaultStatus, pending: true } },
     name: { type: String, trim: true },
-    agreement: { type: Schema.Types.ObjectId, ref: "Agreement" },
-    paydate: { type: Date, required: true },
+    agreement: {
+      type: Schema.Types.ObjectId,
+      ref: "Agreement",
+      required: [true, "is required"],
+    },
+    paydate: { type: Date, required: [true, "is required"] },
     payouted: Date,
-    payment: { type: Number, required: true, trim: true },
+    payment: { type: Number, required: [true, "is required"], trim: true },
     details: { type: String, trim: true },
   },
   {

@@ -1,22 +1,22 @@
 import { Router } from "express";
-import * as notificationCtrl from "../controllers/notification.controller.js";
+import { getAgreementById } from "../controllers/agreement.controller.js";
+import {
+  createNotificationByAgreement,
+  getAllNotificationByAgreement,
+  getNotificacionById,
+  updateNotification,
+} from "../controllers/notification.controller.js";
 
 const router = Router();
 
-// notificationCtrl create
-router.post("/api/notification", notificationCtrl.create);
+router.param("agreement", getAgreementById);
+router
+  .route("/api/notification/agreement/:agreement")
+  .post(createNotificationByAgreement)
+  .get(getAllNotificationByAgreement);
 
-// notificationCtrl getAll
-router.get("/api/notification", notificationCtrl.getAll);
-
-// notificationCtrl getById
-router.get("/api/notification/:id", notificationCtrl.getById);
-
-// notificationCtrl updateById
-router.put("/api/notification/:id", notificationCtrl.updateById);
-
-// notificationCtrl deleteById
-router.delete("/api/notification/:id", notificationCtrl.deleteById);
+router.param("id", getNotificacionById);
+router.route("/api/notification/:id").put(updateNotification);
 
 //
 export default router;

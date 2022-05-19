@@ -1,51 +1,43 @@
-// import Notification from "../models/notification.model.js";
+import Notification from "../models/notification.model.js";
+import { successResponse } from "../utils/index.js";
 
-/**
- * ## Create Notification
- * * lorem
- * @param {*} req
- * @return
- */
-export const create = (req, res) => {
-  res.send("create");
+const createNotificationByAgreement = async (req, res, next) => {
+  try {
+    const notificacion = await Notification.createByAgreementStatics(req);
+    successResponse(res, 201, "notificacion created", notificacion);
+  } catch (error) {
+    next(error);
+  }
 };
-
-/**
- * ## Get All Notification
- * * lorem
- * @param {*} req
- * @return
- */
-export const getAll = (req, res) => {
-  res.send("getAll");
+const getAllNotificationByAgreement = async (req, res, next) => {
+  try {
+    const arrNotices = await Notification.getAllByAgreementStatics(req);
+    if (!arrNotices.length) successResponse(res, 204);
+    else successResponse(res, 200, null, arrNotices);
+  } catch (error) {
+    next(error);
+  }
 };
-
-/**
- * ## Get Notification by ID
- * * lorem
- * @param {*} req
- * @return
- */
-export const getById = (req, res) => {
-  res.send("getById");
+const getNotificacionById = async (req, res, next, id) => {
+  try {
+    const notification = await Notification.findById(id);
+    req.notification = notification;
+    next();
+  } catch (error) {
+    next(error);
+  }
 };
-
-/**
- * ## Update Notification by ID
- * * lorem
- * @param {*} req
- * @return
- */
-export const updateById = (req, res) => {
-  res.send("updateById");
+const updateNotification = async (req, res, next) => {
+  try {
+    const updated = await Notification.updateStatics(req);
+    successResponse(res, 200, "notification updated", updated);
+  } catch (error) {
+    next(error);
+  }
 };
-
-/**
- * ## Delete Notification by ID
- * * lorem
- * @param {*} req
- * @return
- */
-export const deleteById = (req, res) => {
-  res.send("deleteById");
+export {
+  createNotificationByAgreement,
+  getAllNotificationByAgreement,
+  getNotificacionById,
+  updateNotification,
 };

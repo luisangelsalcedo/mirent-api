@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import moment from "moment";
 import { errorResponse, objectPropertyExiste } from "../utils/index.js";
 import { agreementSchema, agreementDefaultStatus } from "../schemas/index.js";
 
@@ -96,16 +97,17 @@ agreementSchema.pre("updateOne", function (next) {
  */
 agreementSchema.pre("updateOne", async function (next) {
   const agreement = await this.model.findOne(this._conditions);
+  this.agreement = agreement;
   const { disabled, active, signed, archived } = agreement.status;
 
   // DESABILITADO
   if (disabled) {
-    const { sign, rents, notification } = this.body;
+    const { sign, rents, notifications } = this.body;
     if (sign)
       throw errorResponse(403, "activate the agreement to be able to sign it");
     if (rents)
       throw errorResponse(403, "activate the agreement to make payments");
-    if (notification)
+    if (notifications)
       throw errorResponse(403, "activate the agreement to make notifications");
     next();
   }
@@ -120,7 +122,7 @@ agreementSchema.pre("updateOne", async function (next) {
 
   // FIRMADO
   if (signed) {
-    const { status, rents, notification, ...res } = this.body;
+    const { status, rents, notifications, ...res } = this.body;
     if (Object.keys(res).length)
       throw errorResponse(403, "cannot modify an signed agreement");
     next();
@@ -149,9 +151,8 @@ agreementSchema.pre("updateOne", function (next) {
 /**
  * validamos los requisitos minimos para activar o firmar el contrato
  */
-agreementSchema.pre("updateOne", async function (next) {
-  const { occupant, sign, startdate, enddate, details } =
-    await this.model.findOne(this._conditions);
+agreementSchema.pre("updateOne", function (next) {
+  const { occupant, sign, startdate, enddate, details } = this.agreement;
   const { status } = this.body;
 
   if (status?.active) {
@@ -167,6 +168,42 @@ agreementSchema.pre("updateOne", async function (next) {
     next();
   }
   next();
+});
+/**
+ * startdate: Tiene que ser mayor a la fecha actual
+ * enddate: contrato minimo 1 año
+ */
+agreementSchema.pre("updateOne", function (next) {
+  const { startdate: thisStart } = this.agreement;
+  const { startdate, enddate } = this.body;
+  if (startdate) {
+    const start = moment(startdate).format("x");
+    if (start < Date.now())
+      throw errorResponse(422, "the start date must not be earlier than today");
+  }
+  if (enddate) {
+    const addYear = moment(thisStart).add(1, "years").format("x");
+    const newAddYear = moment(startdate).add(1, "years").format("x");
+    const end = moment(enddate).format("x");
+    if (end < addYear || end < newAddYear)
+      throw errorResponse(422, "Contract period of at least one year.");
+  }
+  next();
+});
+/**
+ * Validamos si el ocupante existe
+ * validamos que el ocupante sea diferente que el propietario
+ */
+agreementSchema.pre("updateOne", async function (next) {
+  const { occupant } = this.body;
+  const { property } = await this.agreement.populate("property");
+  if (occupant) {
+    const find = await mongoose.model("User").findById(occupant);
+    if (!find) throw errorResponse(404, "occupant not found");
+
+    if (String(property.owner) === String(occupant))
+      throw errorResponse(403, "invalid occupant, choose another");
+  }
 });
 /**
  * si archivamos el agreement cambiamos la propiedad vincuada a estado disponible (available)
@@ -194,9 +231,16 @@ agreementSchema.statics.findAllByPropertyStatics = async function (req) {
   const { property } = req.params;
   const arr = await this.find({
     property,
-  }).populate({
-    path: "property",
-  });
+  })
+    .populate({
+      path: "property",
+    })
+    .populate({
+      path: "rents",
+    })
+    .populate({
+      path: "notifications",
+    });
   return arr;
 };
 /**
@@ -205,7 +249,10 @@ agreementSchema.statics.findAllByPropertyStatics = async function (req) {
  *
  */
 agreementSchema.statics.findByIdStatics = async function (id) {
-  const agreement = await this.findById(id);
+  const agreement = await this.findById(id)
+    .populate({ path: "property" })
+    .populate({ path: "rents" })
+    .populate({ path: "notifications" });
   if (agreement) return agreement;
   throw errorResponse(404, "agreement not found");
 };
