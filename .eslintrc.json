@@ -17,6 +17,7 @@
     "no-underscore-dangle": 0,
     "no-useless-escape": 0,
     "no-unused-vars": 0,
-    "prefer-arrow-callback": 0
+    "prefer-arrow-callback": 0,
+    "no-prototype-builtins": 0
   }
 }

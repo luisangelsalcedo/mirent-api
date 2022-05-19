@@ -47,6 +47,7 @@ userSchema.pre("updateOne", function (next) {
  * * USER AUTH
  *
  */
+
 userSchema.statics.userAuth = async function (req) {
   const { email, password: pass } = req.body;
   const user = await this.findOne({ email });

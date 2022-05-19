@@ -1,51 +1,63 @@
-// import Rent from "../models/rent.model.js";
+import { successResponse } from "../utils/index.js";
+import Rent from "../models/rent.model.js";
 
-/**
- * ## Create Rent
- * * lorem
- * @param {*} req
- * @return
- */
-export const create = (req, res) => {
-  res.send("create");
+const createRentByAgreement = async (req, res, next) => {
+  try {
+    const rent = await Rent.createByAgreementStatics(req);
+    successResponse(res, 201, "rent created", rent);
+  } catch (error) {
+    next(error);
+  }
+};
+const getAllRentByAgreement = async (req, res, next) => {
+  try {
+    const arrRents = await Rent.getAllByAgreementStatics(req);
+    if (!arrRents.length) successResponse(res, 204);
+    else successResponse(res, 200, null, arrRents);
+  } catch (error) {
+    next(error);
+  }
+};
+const getRentById = async (req, res, next, id) => {
+  try {
+    const rent = await Rent.findByIdStatics(id);
+    req.rent = rent;
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+const getOneRent = async (req, res, next) => {
+  try {
+    const { rent } = req;
+    successResponse(res, 200, null, rent);
+  } catch (error) {
+    next(error);
+  }
+};
+const updateRent = async (req, res, next) => {
+  try {
+    const updated = await Rent.updateStatics(req);
+    successResponse(res, 200, "rent updated", updated);
+  } catch (error) {
+    next(error);
+  }
+};
+const deleteRent = async (req, res, next) => {
+  try {
+    const { rent } = req;
+    const deleted = await rent.remove();
+    successResponse(res, 200, "deleted rent", deleted);
+  } catch (error) {
+    next(error);
+  }
 };
 
-/**
- * ## Get All Rent
- * * lorem
- * @param {*} req
- * @return
- */
-export const getAll = (req, res) => {
-  res.send("getAll");
-};
-
-/**
- * ## Get Rent by ID
- * * lorem
- * @param {*} req
- * @return
- */
-export const getById = (req, res) => {
-  res.send("getById");
-};
-
-/**
- * ## Update Rent by ID
- * * lorem
- * @param {*} req
- * @return
- */
-export const updateById = (req, res) => {
-  res.send("updateById");
-};
-
-/**
- * ## Delete Rent by ID
- * * lorem
- * @param {*} req
- * @return
- */
-export const deleteById = (req, res) => {
-  res.send("deleteById");
+export {
+  createRentByAgreement,
+  getAllRentByAgreement,
+  getRentById,
+  getOneRent,
+  updateRent,
+  deleteRent,
 };

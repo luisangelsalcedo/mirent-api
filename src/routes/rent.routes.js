@@ -1,22 +1,27 @@
 import { Router } from "express";
-import * as rentCtrl from "../controllers/rent.controller.js";
+import { getAgreementById } from "../controllers/agreement.controller.js";
+import {
+  createRentByAgreement,
+  getAllRentByAgreement,
+  getRentById,
+  getOneRent,
+  updateRent,
+  deleteRent,
+} from "../controllers/rent.controller.js";
 
 const router = Router();
+router.param("agreement", getAgreementById);
+router
+  .route("/api/rent/agreement/:agreement")
+  .post(createRentByAgreement)
+  .get(getAllRentByAgreement);
 
-// rentCtrl create
-router.post("/api/rent", rentCtrl.create);
-
-// rentCtrl getAll
-router.get("/api/rent", rentCtrl.getAll);
-
-// rentCtrl getById
-router.get("/api/rent/:id", rentCtrl.getById);
-
-// rentCtrl updateById
-router.put("/api/rent/:id", rentCtrl.updateById);
-
-// rentCtrl deleteById
-router.delete("/api/rent/:id", rentCtrl.deleteById);
+router.param("id", getRentById);
+router
+  .route("/api/rent/:id")
+  .get(getOneRent)
+  .put(updateRent)
+  .delete(deleteRent);
 
 //
 export default router;

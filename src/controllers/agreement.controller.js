@@ -79,7 +79,7 @@ const deleteAgreement = async (req, res, next) => {
   try {
     const { agreement } = req;
     const deleted = await agreement.remove();
-    successResponse(res, 200, "delected agreement", deleted);
+    successResponse(res, 200, "deleted agreement", deleted);
   } catch (error) {
     next(error);
   }

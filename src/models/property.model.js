@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { errorResponse } from "../utils/index.js";
+import { errorResponse, objectPropertyExiste } from "../utils/index.js";
 import { propertySchema, propertyDefaultStatus } from "../schemas/index.js";
 
 const findAgreementProperty = async (property) => {
@@ -37,10 +37,12 @@ propertySchema.pre("remove", function (next) {
  * creamos una propiedad body donde incertamos los datos que vamos a actualizar
  */
 propertySchema.pre("updateOne", function (next) {
-  const { $set, $setOnInsert, ...res } = this._update;
-  if (!Object.keys(res).length) throw errorResponse(422, "empty content");
-  this.body = res;
-  next();
+  if (this._update) {
+    const { $set, $setOnInsert, ...res } = this._update;
+    this.body = res;
+    next();
+  }
+  throw errorResponse(422, "empty content");
 });
 /**
  * valida que NO se pueda editar el propitatio
@@ -90,6 +92,10 @@ propertySchema.pre("updateOne", async function (next) {
 propertySchema.pre("updateOne", async function (next) {
   const { status } = this._update;
   if (status) {
+    const key = Object.keys(status)[0];
+    if (!objectPropertyExiste(propertyDefaultStatus, key))
+      throw errorResponse(422, `'${key}' state you want to set does not exist`);
+
     const update = { ...propertyDefaultStatus, ...status };
     this._update.status = update;
   }

@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 export const agreementDefaultStatus = {
   disabled: false,
   active: false,
+  signed: false,
   archived: false,
 };
 

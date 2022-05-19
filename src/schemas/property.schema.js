@@ -9,6 +9,10 @@ export const propertyDefaultStatus = {
 const { Schema } = mongoose;
 const propertySchema = new Schema(
   {
+    status: {
+      type: Object,
+      default: { ...propertyDefaultStatus, maintenance: true },
+    },
     owner: { type: Schema.Types.ObjectId, ref: "User" },
     name: {
       type: String,
@@ -22,10 +26,6 @@ const propertySchema = new Schema(
     details: {
       type: String,
       trim: true,
-    },
-    status: {
-      type: Object,
-      default: { ...propertyDefaultStatus, maintenance: true },
     },
     price: Number,
   },
