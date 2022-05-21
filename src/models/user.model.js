@@ -2,8 +2,14 @@ import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { userSchema } from "../schemas/index.js";
-import { generateJWT, errorResponse } from "../utils/index.js";
+import {
+  generateHash,
+  generateJWT,
+  errorResponse,
+  sendMail,
+} from "../utils/index.js";
 import { config } from "../config/index.js";
+import { mailRecoverPassword } from "../email/index.js";
 
 /**
  *
@@ -23,12 +29,13 @@ userSchema.path("email").validate({
  * * MIDDLEWARE SAVE
  * encripta el password antes de guardar
  */
-userSchema.pre("save", function (next) {
-  bcrypt.hash(this.password, 10, (err, hash) => {
-    if (err) return next(err);
-    this.password = hash;
+userSchema.pre("save", async function (next) {
+  try {
+    this.password = await generateHash(this.password);
     next();
-  });
+  } catch (error) {
+    next(error);
+  }
 });
 /**
  * * MIDDLEWARE UPDATE
@@ -38,6 +45,19 @@ userSchema.pre("updateOne", function (next) {
   const { email } = this._update;
   if (email) throw errorResponse(403, "email can not be modify");
   next();
+});
+
+/**
+ * encripta el password antes de actualizar usuario
+ */
+userSchema.pre("updateOne", async function (next) {
+  const { password } = this._update;
+  try {
+    this._update.password = await generateHash(password);
+    next();
+  } catch (error) {
+    next(error);
+  }
 });
 /**
  * /////////////////////////////////////////////////////////////////////////////
@@ -83,6 +103,35 @@ userSchema.statics.verifyToken = async function (req) {
       });
     });
   });
+};
+/**
+ *
+ * * FIND USERNAME
+ *
+ */
+userSchema.statics.findUsername = async function (req) {
+  const { email } = req.body;
+  if (!email) throw errorResponse(422, "email is required");
+
+  const user = await this.findOne({ email });
+  if (!user) throw errorResponse(404, "user not found");
+
+  const { _id: id, name } = user;
+  const token = await generateJWT({ id, name });
+
+  const enlace = `${req.headers.origin}/replacepassword`;
+  const msg = {
+    to: email,
+    from: "seemc9@gmail.com",
+    subject: "Restablece la contraseña de miRent",
+    html: mailRecoverPassword({ name, token, enlace }),
+  };
+  try {
+    await sendMail(msg);
+    return token;
+  } catch (error) {
+    throw new Error(error);
+  }
 };
 /**
  *

@@ -18,4 +18,7 @@ export const config = {
   token: {
     secret: process.env.TOKEN_SECRET,
   },
+  sendgrid: {
+    apikey: process.env.SENDGRID_API_KEY,
+  },
 };

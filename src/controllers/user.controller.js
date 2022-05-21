@@ -37,6 +37,14 @@ const tokenAuth = async (req, res, next) => {
   }
 };
 
+const recoverPassword = async (req, res, next) => {
+  try {
+    const token = await User.findUsername(req);
+    successResponse(res, 200, "user found", token);
+  } catch (error) {
+    next(error);
+  }
+};
 /**
  * ## getUserById
  */
@@ -75,4 +83,12 @@ const updateUser = async (req, res, next) => {
   }
 };
 
-export { login, createUser, tokenAuth, getUserById, getOneUser, updateUser };
+export {
+  login,
+  createUser,
+  tokenAuth,
+  recoverPassword,
+  getUserById,
+  getOneUser,
+  updateUser,
+};

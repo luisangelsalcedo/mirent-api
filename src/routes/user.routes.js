@@ -3,6 +3,7 @@ import {
   login,
   createUser,
   tokenAuth,
+  recoverPassword,
   getUserById,
   getOneUser,
   updateUser,
@@ -18,6 +19,9 @@ userRouter.post("/auth/local/register", createUser);
 
 // validate user authentication token
 userRouter.get("/auth/local/validate/:token", tokenAuth);
+
+// validate user authentication token
+userRouter.post("/auth/local/recover/", recoverPassword);
 
 // users endpoint
 userRouter.param("id", getUserById);
