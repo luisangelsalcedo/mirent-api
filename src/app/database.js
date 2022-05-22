@@ -10,5 +10,7 @@ import { config } from "../config/index.js";
   }
 })();
 
-mongoose.connection.once("open", () => console.log("connected database"));
+mongoose.connection.once("open", () =>
+  console.log("Mongoose: Connected database")
+);
 mongoose.connection.on("error", (err) => console.log(err));

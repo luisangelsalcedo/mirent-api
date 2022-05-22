@@ -52,12 +52,15 @@ userSchema.pre("updateOne", function (next) {
  */
 userSchema.pre("updateOne", async function (next) {
   const { password } = this._update;
-  try {
-    this._update.password = await generateHash(password);
-    next();
-  } catch (error) {
-    next(error);
+  if (password) {
+    try {
+      this._update.password = await generateHash(password);
+      next();
+    } catch (error) {
+      next(error);
+    }
   }
+  next();
 });
 /**
  * /////////////////////////////////////////////////////////////////////////////
@@ -117,18 +120,20 @@ userSchema.statics.findUsername = async function (req) {
   if (!user) throw errorResponse(404, "user not found");
 
   const { _id: id, name } = user;
-  const token = await generateJWT({ id, name });
+  const token = await generateJWT({ id, name }, 60 * 5);
 
   const enlace = `${req.headers.origin}/replacepassword`;
   const msg = {
+    from: '"miRent support" <support@mirent.app>',
     to: email,
-    from: "seemc9@gmail.com",
     subject: "Restablece la contraseña de miRent",
     html: mailRecoverPassword({ name, token, enlace }),
   };
+
   try {
-    await sendMail(msg);
-    return token;
+    const send = await sendMail(msg);
+    if (send) return token;
+    // return token;
   } catch (error) {
     throw new Error(error);
   }
@@ -143,6 +148,7 @@ userSchema.statics.updateStatics = async function (req) {
   if (!Object.keys(body).length) throw errorResponse(422, "empty content");
 
   const updated = await user.updateOne(body);
+  console.log(updated);
   if (updated.acknowledged) return this.findById(user._id);
   return null;
 };
