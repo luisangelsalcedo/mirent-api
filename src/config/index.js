@@ -22,4 +22,9 @@ export const config = {
     user: "seemc9@gmail.com",
     apipassword: process.env.GMAIL_APPS_PASSWORD,
   },
+  cloudinary: {
+    name: process.env.CLOUDINARY_CLOUD_NAME,
+    key: process.env.CLOUDINARY_API_KEY,
+    secret: process.env.CLOUDINARY_API_SECRET,
+  },
 };
