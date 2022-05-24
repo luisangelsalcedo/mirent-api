@@ -18,6 +18,7 @@ export const config = {
   token: {
     secret: process.env.TOKEN_SECRET,
   },
+
   gmail: {
     user: "seemc9@gmail.com",
     apipassword: process.env.GMAIL_APPS_PASSWORD,
@@ -26,5 +27,6 @@ export const config = {
     name: process.env.CLOUDINARY_CLOUD_NAME,
     key: process.env.CLOUDINARY_API_KEY,
     secret: process.env.CLOUDINARY_API_SECRET,
+
   },
 };

@@ -8,7 +8,9 @@ import {
   generateJWT,
   errorResponse,
   sendMail,
+
   destroyImgCloudinary,
+
 } from "../utils/index.js";
 import { config } from "../config/index.js";
 import { mailRecoverPassword } from "../email/index.js";
@@ -47,6 +49,19 @@ userSchema.pre("updateOne", function (next) {
   const { email } = this._update;
   if (email) throw errorResponse(403, "email can not be modify");
   next();
+});
+
+/**
+ * encripta el password antes de actualizar usuario
+ */
+userSchema.pre("updateOne", async function (next) {
+  const { password } = this._update;
+  try {
+    this._update.password = await generateHash(password);
+    next();
+  } catch (error) {
+    next(error);
+  }
 });
 /**
  * cargamos el registro anterior para comparlo en otras validaciones
@@ -148,6 +163,7 @@ userSchema.statics.findUsername = async function (req) {
   if (!user) throw errorResponse(404, "user not found");
 
   const { _id: id, name } = user;
+
   const token = await generateJWT({ id, name }, 60 * 5);
 
   const enlace = `${req.headers.origin}/replacepassword`;
@@ -162,6 +178,7 @@ userSchema.statics.findUsername = async function (req) {
     const send = await sendMail(msg);
     if (send) return token;
     // return token;
+
   } catch (error) {
     throw new Error(error);
   }
