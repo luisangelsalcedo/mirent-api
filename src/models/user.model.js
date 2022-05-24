@@ -78,12 +78,15 @@ userSchema.pre("updateOne", async function (next) {
  */
 userSchema.post("updateOne", async function () {
   const user = await this.model.findOne(this._conditions);
+
   const { userPrevius } = this;
-  if (userPrevius.image.imageId !== user.image.imageId) {
-    const { result, error } = await destroyImgCloudinary(
-      userPrevius.image.imageId
-    );
-    if (error) throw new Error(error);
+  if (userPrevius.image.imageId) {
+    if (userPrevius.image.imageId !== user.image.imageId) {
+      const { result, error } = await destroyImgCloudinary(
+        userPrevius.image.imageId
+      );
+      if (error) throw new Error(error);
+    }
   }
   // else console.log("Conservar imagen");
 });
