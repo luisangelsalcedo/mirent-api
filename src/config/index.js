@@ -18,7 +18,15 @@ export const config = {
   token: {
     secret: process.env.TOKEN_SECRET,
   },
-  sendgrid: {
-    apikey: process.env.SENDGRID_API_KEY,
+
+  gmail: {
+    user: "seemc9@gmail.com",
+    apipassword: process.env.GMAIL_APPS_PASSWORD,
+  },
+  cloudinary: {
+    name: process.env.CLOUDINARY_CLOUD_NAME,
+    key: process.env.CLOUDINARY_API_KEY,
+    secret: process.env.CLOUDINARY_API_SECRET,
+
   },
 };
