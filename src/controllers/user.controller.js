@@ -65,7 +65,8 @@ const getUserById = async (req, res, next, id) => {
 const getOneUser = async (req, res, next) => {
   try {
     const { user } = req;
-    successResponse(res, 200, null, user);
+    const { password, ...resto } = user._doc;
+    successResponse(res, 200, null, resto);
   } catch (error) {
     next(error);
   }
@@ -77,7 +78,8 @@ const getOneUser = async (req, res, next) => {
 const updateUser = async (req, res, next) => {
   try {
     const updated = await User.updateStatics(req);
-    successResponse(res, 200, "user has been updated", updated);
+    const { password, ...resto } = updated._doc;
+    successResponse(res, 200, "user has been updated", resto);
   } catch (error) {
     next(error);
   }

@@ -1,12 +1,16 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+
 import { userSchema } from "../schemas/index.js";
 import {
   generateHash,
   generateJWT,
   errorResponse,
   sendMail,
+
+  destroyImgCloudinary,
+
 } from "../utils/index.js";
 import { config } from "../config/index.js";
 import { mailRecoverPassword } from "../email/index.js";
@@ -60,6 +64,48 @@ userSchema.pre("updateOne", async function (next) {
   }
 });
 /**
+ * cargamos el registro anterior para comparlo en otras validaciones
+ */
+userSchema.pre("updateOne", async function (next) {
+  const user = await this.model.findOne(this._conditions);
+  this.userPrevius = user;
+  next();
+});
+/**
+ * encripta el password antes de actualizar usuario
+ */
+userSchema.pre("updateOne", async function (next) {
+  const { password } = this._update;
+  if (password) {
+    try {
+      this._update.password = await generateHash(password);
+      next();
+    } catch (error) {
+      next(error);
+    }
+  }
+  next();
+});
+/**
+ * comparamos el registro anterior con el actualizado y verificamos si cambió la imagen
+ *  true: Eliminamos la imagen de cloudinary
+ *  false: Sin acción
+ */
+userSchema.post("updateOne", async function () {
+  const user = await this.model.findOne(this._conditions);
+
+  const { userPrevius } = this;
+  if (userPrevius.image.imageId) {
+    if (userPrevius.image.imageId !== user.image.imageId) {
+      const { result, error } = await destroyImgCloudinary(
+        userPrevius.image.imageId
+      );
+      if (error) throw new Error(error);
+    }
+  }
+  // else console.log("Conservar imagen");
+});
+/**
  * /////////////////////////////////////////////////////////////////////////////
  */
 /**
@@ -80,8 +126,8 @@ userSchema.statics.userAuth = async function (req) {
       if (!result) {
         reject(errorResponse(403, "password is not correct"));
       }
-      const { _id: id, name } = user;
-      resolve(generateJWT({ id, name }));
+      const { _id: id, name, image } = user;
+      resolve(generateJWT({ id, name, image: image.thumb }));
     });
   });
 };
@@ -117,18 +163,22 @@ userSchema.statics.findUsername = async function (req) {
   if (!user) throw errorResponse(404, "user not found");
 
   const { _id: id, name } = user;
-  const token = await generateJWT({ id, name });
+
+  const token = await generateJWT({ id, name }, 60 * 5);
 
   const enlace = `${req.headers.origin}/replacepassword`;
   const msg = {
+    from: '"miRent support" <support@mirent.app>',
     to: email,
-    from: "seemc9@gmail.com",
     subject: "Restablece la contraseña de miRent",
     html: mailRecoverPassword({ name, token, enlace }),
   };
+
   try {
-    await sendMail(msg);
-    return token;
+    const send = await sendMail(msg);
+    if (send) return token;
+    // return token;
+
   } catch (error) {
     throw new Error(error);
   }

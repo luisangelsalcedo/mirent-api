@@ -19,7 +19,14 @@ const userSchema = new Schema(
       type: String,
       required: [true, "is required"],
     },
-    image: String,
+    image: {
+      type: Object,
+      default: {
+        origin: null,
+        imageId: null,
+        thumb: null,
+      },
+    },
     auth0: Boolean,
     dni: { type: String, trim: true },
     phone: { type: String, trim: true },
