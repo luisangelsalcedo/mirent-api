@@ -12,6 +12,8 @@ import {
 } from "../utils/index.js";
 import { config } from "../config/index.js";
 import { mailRecoverPassword } from "../email/index.js";
+import { expreg } from "../constant/index.js";
+import { isDni } from "../utils/validators.js";
 
 /**
  *
@@ -28,6 +30,25 @@ userSchema.path("email").validate({
   message: "is already taken",
 });
 /**
+ * valida que se registre un numero de dni válido
+ */
+userSchema.path("dni").validate({
+  async validator(dni) {
+    return isDni(dni);
+  },
+  message: "requires a valid DNI",
+});
+/**
+ * valida que se registre un numero
+ */
+userSchema.path("phone").validate({
+  async validator(phone) {
+    if (Number(phone)) return true;
+    return false;
+  },
+  message: "requires only numbers",
+});
+/**
  * * MIDDLEWARE SAVE
  * encripta el password antes de guardar
  */
@@ -39,8 +60,21 @@ userSchema.pre("save", async function (next) {
     next(error);
   }
 });
+
 /**
  * * MIDDLEWARE UPDATE
+ * valida que existan elementos para actualizar
+ * creamos una propiedad body donde incertamos los datos que vamos a actualizar
+ */
+userSchema.pre("updateOne", function (next) {
+  if (this._update) {
+    const { $set, $setOnInsert, ...res } = this._update;
+    this.body = res;
+    next();
+  }
+  throw errorResponse(422, "empty content");
+});
+/**
  * valida que NO se pueda editar el email
  */
 userSchema.pre("updateOne", function (next) {
@@ -78,8 +112,8 @@ userSchema.pre("updateOne", async function (next) {
  */
 userSchema.post("updateOne", async function () {
   const user = await this.model.findOne(this._conditions);
-
   const { userPrevius } = this;
+
   if (userPrevius.image.imageId) {
     if (userPrevius.image.imageId !== user.image.imageId) {
       const { result, error } = await destroyImgCloudinary(
@@ -101,6 +135,11 @@ userSchema.post("updateOne", async function () {
 
 userSchema.statics.userAuth = async function (req) {
   const { email, password: pass } = req.body;
+  if (!email) throw errorResponse(422, "email is required");
+
+  const validEmail = expreg.email.test(email);
+  if (!validEmail) throw errorResponse(422, "invalid email address");
+
   const user = await this.findOne({ email });
 
   return new Promise((resolve, reject) => {
@@ -144,6 +183,9 @@ userSchema.statics.findUsername = async function (req) {
   const { email } = req.body;
   if (!email) throw errorResponse(422, "email is required");
 
+  const validEmail = expreg.email.test(email);
+  if (!validEmail) throw errorResponse(422, "invalid email address");
+
   const user = await this.findOne({ email });
   if (!user) throw errorResponse(404, "user not found");
 
@@ -174,9 +216,8 @@ userSchema.statics.findUsername = async function (req) {
  */
 userSchema.statics.updateStatics = async function (req) {
   const { user, body } = req;
-  if (!Object.keys(body).length) throw errorResponse(422, "empty content");
 
-  const updated = await user.updateOne(body);
+  const updated = await user.updateOne(body, { runValidators: true });
   if (updated.acknowledged) return this.findById(user._id);
   return null;
 };

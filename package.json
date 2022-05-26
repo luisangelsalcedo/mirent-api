@@ -7,12 +7,14 @@
   "scripts": {
     "start": "nodemon src/index.js",
     "dev": "set NODE_ENV=dev&& nodemon src/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev-test": "set NODE_ENV=test&& nodemon src/index.js",
+    "test": "jest"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@babel/plugin-transform-modules-commonjs": "^7.18.2",
     "@sendgrid/mail": "^7.7.0",
     "bcrypt": "^5.0.1",
     "cloudinary": "^1.30.0",

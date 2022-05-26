@@ -12,11 +12,17 @@ export const authentication = (req, res, next) => {
 
     // verificar token
     jwt.verify(token, config.token.secret, (err, dataAuth) => {
-      if (err) return res.status(401).json({ message: "Invalid token" });
+      if (err)
+        return res
+          .status(401)
+          .json({ error: true, statusCode: 401, message: "Invalid token" });
       //
       req.auth = dataAuth; // send data user auth
       next();
     });
     //
-  } else res.status(401).json({ message: "Token required" });
+  } else
+    res
+      .status(401)
+      .json({ error: true, statusCode: 401, message: "Token required" });
 };
