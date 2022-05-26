@@ -1,4 +1,4 @@
-# miRent - `backEnd`
+# miRent - Api Rest
 
 <div>
 <img src="https://img.icons8.com/fluency/32/000000/node-js.png"/>&nbsp;&nbsp;
