@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { expreg } from "../constant/index.js";
 
 const { Schema } = mongoose;
 const userSchema = new Schema(
@@ -10,10 +11,7 @@ const userSchema = new Schema(
       trim: true,
       required: [true, "is required"],
       unique: [true, "sasad"],
-      match: [
-        /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,6})+$/,
-        "invalid email address",
-      ],
+      match: [expreg.email, "invalid email address"],
     },
     password: {
       type: String,
@@ -27,7 +25,6 @@ const userSchema = new Schema(
         thumb: null,
       },
     },
-    auth0: Boolean,
     dni: { type: String, trim: true },
     phone: { type: String, trim: true },
   },

@@ -4,7 +4,7 @@ import path from "path";
 
 // config environments
 const nodeEnv = process.env.NODE_ENV || "";
-const varEnv = path.resolve(process.cwd(), `${nodeEnv}.env`);
+const varEnv = path.resolve(process.cwd(), `./env/${nodeEnv}.env`);
 dotenv.config({
   path: varEnv,
 });
@@ -27,6 +27,5 @@ export const config = {
     name: process.env.CLOUDINARY_CLOUD_NAME,
     key: process.env.CLOUDINARY_API_KEY,
     secret: process.env.CLOUDINARY_API_SECRET,
-
   },
 };
