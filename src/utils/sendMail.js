@@ -1,4 +1,3 @@
-
 import nodemailer from "nodemailer";
 import { config } from "../config/index.js";
 
@@ -13,10 +12,14 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-transporter.verify().then(() => {
-  console.log("Nodemailer: Ready for send mails");
-});
-
+transporter
+  .verify()
+  .then(() => {
+    console.log("Nodemailer: Ready for send mails");
+  })
+  .catch(() => {
+    console.log("Nodemailer error");
+  });
 
 /**
  * ## sendMail
@@ -37,4 +40,3 @@ sendMail(msg)
  */
 
 export const sendMail = (msg) => transporter.sendMail(msg);
-

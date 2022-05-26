@@ -59,3 +59,16 @@ Set environment variables:
 ## Documentation
 
 You can find all the functionalities of the api documented in the following link: [miRent api documentation](https://documenter.getpostman.com/view/11240421/UyxnEkR5)
+
+## Run tests
+
+Set environment variables for tests:
+
+- Create a file called **test.env**
+- Use [reference](./.env.example)
+
+Run the application in the test environment:
+
+- Running the command: `npm run dev-test` to start the application in the test environment.
+- Open another terminal
+- Running the command: `npm run test` to run all the tests.
