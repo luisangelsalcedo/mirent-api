@@ -43,7 +43,10 @@ agreementSchema.pre("save", async function (next) {
  */
 agreementSchema.post("save", async function (agreement) {
   const property = await findProperty(agreement.property);
-  const updated = await property.updateOne({ status: { rented: true } });
+  const updated = await property.updateOne({
+    status: { rented: true },
+    agreement: agreement._id,
+  });
   if (!updated.acknowledged)
     throw errorResponse(500, "the related property did not change state");
 });
@@ -63,8 +66,9 @@ agreementSchema.pre("remove", function (next) {
  */
 agreementSchema.post("remove", async function (agreement) {
   const property = await findProperty(agreement.property);
-  const updated = await property.updateOne({ status: { available: true } });
-  if (!updated.acknowledged)
+  await property.updateOne({ status: { available: true } });
+  const updated2 = await property.updateOne({ agreement: null });
+  if (!updated2.acknowledged)
     throw errorResponse(500, "the related property did not change state");
 });
 /**
@@ -214,8 +218,9 @@ agreementSchema.post("updateOne", async function () {
 
   if (status.archived) {
     const property = await findProperty(agreement.property);
-    const updated = await property.updateOne({ status: { available: true } });
-    if (!updated.acknowledged)
+    await property.updateOne({ status: { available: true } });
+    const updated2 = await property.updateOne({ agreement: null });
+    if (!updated2.acknowledged)
       throw errorResponse(500, "the related property did not change state");
   }
 });
