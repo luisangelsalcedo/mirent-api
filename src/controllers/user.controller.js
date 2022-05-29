@@ -84,6 +84,36 @@ const updateUser = async (req, res, next) => {
     next(error);
   }
 };
+/**
+ * ## deleteUser
+ */
+const deleteUser = async (req, res, next) => {
+  try {
+    const { user } = req;
+    const delted = await user.remove();
+    successResponse(res, 200, "delected user", delted);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const inviteUser = async (req, res, next) => {
+  try {
+    const user = await User.inviteUser(req);
+    successResponse(res, 200, "invitation sent", user);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const sendInviteUser = async (req, res, next) => {
+  try {
+    const user = await User.sendInviteUser(req);
+    successResponse(res, 200, "invitation sent", user);
+  } catch (error) {
+    next(error);
+  }
+};
 
 export {
   login,
@@ -93,4 +123,7 @@ export {
   getUserById,
   getOneUser,
   updateUser,
+  deleteUser,
+  inviteUser,
+  sendInviteUser,
 };

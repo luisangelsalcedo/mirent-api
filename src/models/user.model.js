@@ -9,11 +9,28 @@ import {
   errorResponse,
   sendMail,
   destroyImgCloudinary,
+  isDni,
+  userDefault,
 } from "../utils/index.js";
 import { config } from "../config/index.js";
-import { mailRecoverPassword } from "../email/index.js";
+import { mailRecoverPassword, mailInvitation } from "../email/index.js";
 import { expreg } from "../constant/index.js";
-import { isDni } from "../utils/validators.js";
+
+const sendInvitation = async (origin, remitente, destinatario) => {
+  const { _id, name, email } = destinatario;
+  const token = await generateJWT({ id: _id, name });
+  const enlace = `${origin}/replacepassword/${token}`;
+
+  const msg = {
+    from: '"miRent support" <support@mirent.app>',
+    to: email,
+    subject: "Tienes una invitación a miRent",
+    html: mailInvitation({ name, enlace, user: remitente }),
+  };
+
+  const send = await sendMail(msg);
+  return send;
+};
 
 /**
  *
@@ -190,7 +207,6 @@ userSchema.statics.findUsername = async function (req) {
   if (!user) throw errorResponse(404, "user not found");
 
   const { _id: id, name } = user;
-
   const token = await generateJWT({ id, name }, 60 * 5);
 
   const enlace = `${req.headers.origin}/replacepassword`;
@@ -221,6 +237,45 @@ userSchema.statics.updateStatics = async function (req) {
   if (updated.acknowledged) return this.findById(user._id);
   return null;
 };
+/**
+ *
+ * * INVITE USER
+ *
+ */
+userSchema.statics.inviteUser = async function (req) {
+  const { user, body } = req;
+  const { email } = body;
+
+  const finded = await this.findOne({ email, active: true });
+  if (finded) {
+    if (finded.email === user.email)
+      throw errorResponse(403, "The owner cannot be a tenant");
+    return finded;
+    // enviar correo
+  }
+  // ----------------------------------------------------
+  const userdefault = userDefault(body);
+  const newUser = await this.create(userdefault);
+
+  const send = await sendInvitation(req.headers.origin, user, newUser);
+  if (send) return newUser;
+};
+/**
+ *
+ * * SEND INVITE USER
+ *
+ */
+userSchema.statics.sendInviteUser = async function (req) {
+  const { user, body } = req;
+  const { email } = body;
+  const newUser = await this.findOne({ email });
+
+  if (!newUser) throw errorResponse(422, "user not found");
+
+  const send = await sendInvitation(req.headers.origin, user, newUser);
+  if (send) return newUser;
+};
+
 /**
  * /////////////////////////////////////////////////////////////////////////////
  */

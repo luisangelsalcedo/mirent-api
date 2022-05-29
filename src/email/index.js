@@ -1,3 +1,4 @@
 import { mailRecoverPassword } from "./mailRecoverPassword.js";
+import { mailInvitation } from "./mailInvitation.js";
 
-export { mailRecoverPassword };
+export { mailRecoverPassword, mailInvitation };

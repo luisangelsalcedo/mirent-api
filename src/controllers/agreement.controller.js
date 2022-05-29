@@ -7,6 +7,7 @@ import { successResponse, errorResponse } from "../utils/index.js";
 const createAgreement = async (req, res, next) => {
   try {
     const agreement = await Agreement.create(req.body);
+    await agreement.populate("property");
     successResponse(res, 201, "agreement created", agreement);
   } catch (error) {
     next(error);
@@ -79,6 +80,7 @@ const deleteAgreement = async (req, res, next) => {
   try {
     const { agreement } = req;
     const deleted = await agreement.remove();
+    await deleted.populate("property");
     successResponse(res, 200, "deleted agreement", deleted);
   } catch (error) {
     next(error);
