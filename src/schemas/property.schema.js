@@ -28,6 +28,7 @@ const propertySchema = new Schema(
       trim: true,
     },
     price: Number,
+    agreement: { type: Schema.Types.ObjectId, ref: "Agreement" },
   },
   {
     versionKey: false,

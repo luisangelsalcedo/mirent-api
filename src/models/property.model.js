@@ -69,7 +69,7 @@ propertySchema.pre("updateOne", async function (next) {
 
   // DISPONIBLE
   if (available) {
-    const { status, ...res } = this.body;
+    const { status, agreement, ...res } = this.body;
     if (Object.keys(res).length)
       throw errorResponse(403, "only status can be updated");
     next();
@@ -125,7 +125,7 @@ propertySchema.pre("updateOne", function (next) {
  */
 propertySchema.statics.findAllStatics = async function (req) {
   const { id } = req.auth;
-  const arr = await this.find({ owner: id });
+  const arr = await this.find({ owner: id }).populate({ path: "agreement" });
   if (!arr.length) throw errorResponse(204);
   return arr;
 };
@@ -135,7 +135,7 @@ propertySchema.statics.findAllStatics = async function (req) {
  *
  */
 propertySchema.statics.findByIdStatics = async function (id) {
-  const property = await this.findById(id);
+  const property = await this.findById(id).populate({ path: "agreement" });
   if (property) return property;
 
   throw errorResponse(404, "property not found");
@@ -148,7 +148,8 @@ propertySchema.statics.findByIdStatics = async function (id) {
 propertySchema.statics.updateStatics = async function (req) {
   const { property, body } = req;
   const updated = await property.updateOne(body);
-  if (updated.acknowledged) return this.findById(property._id);
+  if (updated.acknowledged)
+    return this.findById(property._id).populate({ path: "agreement" });
 
   throw errorResponse(422, "could not update user");
 };
