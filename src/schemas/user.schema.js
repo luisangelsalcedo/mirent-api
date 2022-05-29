@@ -27,6 +27,7 @@ const userSchema = new Schema(
     },
     dni: { type: String, trim: true },
     phone: { type: String, trim: true },
+    active: { type: Boolean, default: true },
   },
   {
     versionKey: false,

@@ -181,13 +181,13 @@ agreementSchema.pre("updateOne", function (next) {
     if (start < Date.now())
       throw errorResponse(422, "the start date must not be earlier than today");
   }
-  if (enddate) {
-    const addYear = moment(thisStart).add(1, "years").format("x");
-    const newAddYear = moment(startdate).add(1, "years").format("x");
-    const end = moment(enddate).format("x");
-    if (end < addYear || end < newAddYear)
-      throw errorResponse(422, "Contract period of at least one year.");
-  }
+  // if (enddate) {
+  //   const addYear = moment(thisStart).add(1, "years").format("x");
+  //   const newAddYear = moment(startdate).add(1, "years").format("x");
+  //   const end = moment(enddate).format("x");
+  //   if (end < addYear || end < newAddYear)
+  //     throw errorResponse(422, "Contract period of at least one year.");
+  // }
   next();
 });
 /**
@@ -236,6 +236,9 @@ agreementSchema.statics.findAllByPropertyStatics = async function (req) {
       path: "property",
     })
     .populate({
+      path: "occupant",
+    })
+    .populate({
       path: "rents",
     })
     .populate({
@@ -251,6 +254,7 @@ agreementSchema.statics.findAllByPropertyStatics = async function (req) {
 agreementSchema.statics.findByIdStatics = async function (id) {
   const agreement = await this.findById(id)
     .populate({ path: "property" })
+    .populate({ path: "occupant" })
     .populate({ path: "rents" })
     .populate({ path: "notifications" });
   if (agreement) return agreement;
@@ -266,7 +270,11 @@ agreementSchema.statics.updateStatics = async function (req) {
 
   const updated = await agreement.updateOne(body);
   if (updated.acknowledged)
-    return this.findById(agreement._id).populate({ path: "property" });
+    return this.findById(agreement._id)
+      .populate({ path: "property" })
+      .populate({ path: "occupant" })
+      .populate({ path: "rents" })
+      .populate({ path: "notifications" });
   throw errorResponse(404, "could not update agreement");
 };
 /**

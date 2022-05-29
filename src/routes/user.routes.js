@@ -7,6 +7,9 @@ import {
   getUserById,
   getOneUser,
   updateUser,
+  deleteUser,
+  inviteUser,
+  sendInviteUser,
 } from "../controllers/user.controller.js";
 
 const userRouter = Router();
@@ -25,6 +28,12 @@ userRouter.post("/auth/local/recover/", recoverPassword);
 
 // users endpoint
 userRouter.param("id", getUserById);
-userRouter.route("/api/user/:id").get(getOneUser).put(updateUser);
+userRouter
+  .route("/api/user/:id")
+  .get(getOneUser)
+  .put(updateUser)
+  .delete(deleteUser);
+userRouter.post("/api/user/:id/invitation", inviteUser);
+userRouter.post("/api/user/:id/sendinvitation", sendInviteUser);
 
 export default userRouter;
