@@ -1,23 +1,32 @@
 import { successResponse } from "../utils/index.js";
 import Rent from "../models/rent.model.js";
 
-const createRentByAgreement = async (req, res, next) => {
+/**
+ ##  createRent (by property)
+ */
+const createRent = async (req, res, next) => {
   try {
-    const rent = await Rent.createByAgreementStatics(req);
+    const rent = await Rent.createStatics(req);
     successResponse(res, 201, "rent created", rent);
   } catch (error) {
     next(error);
   }
 };
-const getAllRentByAgreement = async (req, res, next) => {
+/**
+ ##  getAllRent (by property)
+ */
+const getAllRent = async (req, res, next) => {
   try {
-    const arrRents = await Rent.getAllByAgreementStatics(req);
+    const arrRents = await Rent.getAllStatics(req);
     if (!arrRents.length) successResponse(res, 204);
     else successResponse(res, 200, null, arrRents);
   } catch (error) {
     next(error);
   }
 };
+/**
+ ##  getRentById
+ */
 const getRentById = async (req, res, next, id) => {
   try {
     const rent = await Rent.findByIdStatics(id);
@@ -27,6 +36,9 @@ const getRentById = async (req, res, next, id) => {
     next(error);
   }
 };
+/**
+ ##  getOneRent
+ */
 const getOneRent = async (req, res, next) => {
   try {
     const { rent } = req;
@@ -35,6 +47,9 @@ const getOneRent = async (req, res, next) => {
     next(error);
   }
 };
+/**
+ ##  updateRent
+ */
 const updateRent = async (req, res, next) => {
   try {
     const updated = await Rent.updateStatics(req);
@@ -43,6 +58,9 @@ const updateRent = async (req, res, next) => {
     next(error);
   }
 };
+/**
+ ##  deleteRent
+ */
 const deleteRent = async (req, res, next) => {
   try {
     const { rent } = req;
@@ -54,8 +72,8 @@ const deleteRent = async (req, res, next) => {
 };
 
 export {
-  createRentByAgreement,
-  getAllRentByAgreement,
+  createRent,
+  getAllRent,
   getRentById,
   getOneRent,
   updateRent,

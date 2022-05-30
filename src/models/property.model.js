@@ -2,39 +2,72 @@ import mongoose from "mongoose";
 import { errorResponse, objectPropertyExiste } from "../utils/index.js";
 import { propertySchema, propertyDefaultStatus } from "../schemas/index.js";
 
-const findAgreementProperty = async (property) => {
-  const agreement = await mongoose
-    .model("Agreement")
-    .findOne({ property: property._id });
-
-  return agreement;
-};
 /**
+ *
  * * VALIDATE
- * valida que no exista otra propiedad con un nombre repetido creado por un mismo propietario
+ * valida que no exista otra propiedad con un nombre repetido (owner)
+ *
  */
 propertySchema.path("name").validate({
   async validator(name) {
+    let owner;
+    if (this.owner) owner = this.owner;
+    else owner = this.property.owner;
     return mongoose
       .model("Property")
-      .findOne({ name, owner: this.owner })
+      .findOne({ name, owner })
       .then((property) => !property);
   },
   message: "is already taken",
 });
 /**
+ *
+ * Valida que el precio sea solo números
+ *
+ */
+propertySchema.path("price").validate({
+  async validator(price) {
+    return Number(price);
+  },
+  message: "only required numbers",
+});
+//
+//
+//
+//
+// ? ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ? ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//
+//
+/**
+ *
  * * MIDDLEWARE REMOVE
- * valida que no se pueda eliminar la propiedad cuando esta en estado alquilado
+ * valida que no se pueda eliminar la propiedad cuando esta en estado activo o alquilado
+ *
  */
 propertySchema.pre("remove", function (next) {
   if (this.status.rented)
     throw errorResponse(403, "cannot be removed while rented");
+
+  if (this.status.available)
+    throw errorResponse(403, "cannot be removed while available");
+
   next();
 });
 /**
+ *
+ * cuando se eliminar la propiedad eliminar las demas entidades inculadas (agreement, rent, notification)
+ *
+ */
+propertySchema.post("remove", function (property) {});
+/**
+ *
  * * MIDDLEWARE UPDATE
  * valida que existan elementos para actualizar
- * creamos una propiedad body donde incertamos los datos que vamos a actualizar
+ * creamos una propiedad body donde insertamos los datos que vamos a actualizar
+ *
  */
 propertySchema.pre("updateOne", function (next) {
   if (this._update) {
@@ -45,7 +78,9 @@ propertySchema.pre("updateOne", function (next) {
   throw errorResponse(422, "empty content");
 });
 /**
+ *
  * valida que NO se pueda editar el propitatio
+ *
  */
 propertySchema.pre("updateOne", function (next) {
   const { owner } = this.body;
@@ -53,10 +88,13 @@ propertySchema.pre("updateOne", function (next) {
   next();
 });
 /**
+ *
  * buscamos el documento property que vamos a actualizar y validamos según su estado
  * MANTENIMIENTO: permiso de editar todo
  * DISPONIBLE: permiso de modificar el estado y el precio
  * ALQUILADO: solo puede editar el estado si propiedad NO está vinculada a un contrato (disabled || active)
+ * actualizamos el estado basandonos en la lista de estados por defecto
+ *
  */
 propertySchema.pre("updateOne", async function (next) {
   const property = await this.model.findOne(this._conditions);
@@ -69,7 +107,7 @@ propertySchema.pre("updateOne", async function (next) {
 
   // DISPONIBLE
   if (available) {
-    const { status, agreement, ...res } = this.body;
+    const { status, agreement, notificacions, ...res } = this.body;
     if (Object.keys(res).length)
       throw errorResponse(403, "only status can be updated");
     next();
@@ -77,19 +115,16 @@ propertySchema.pre("updateOne", async function (next) {
 
   // ALQUILADO
   if (rented) {
-    const { status, ...res } = this.body;
-    const agreement = await findAgreementProperty(property);
-    if (
-      Object.keys(res).length ||
-      agreement?.status.active ||
-      agreement?.status.disabled
-    )
+    const { status, rents, notificacions, ...res } = this.body;
+    if (Object.keys(res).length)
       throw errorResponse(403, "cannot be modified when rented");
     next();
   }
 });
 /**
+ *
  * actualizamos el estado basandonos en la lista de estados por defecto
+ *
  */
 propertySchema.pre("updateOne", function (next) {
   const { status } = this._update;
@@ -103,29 +138,28 @@ propertySchema.pre("updateOne", function (next) {
   }
   next();
 });
+//
+//
+//
+//
+// ? ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ? ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//
+//
 /**
  *
- */
-propertySchema.pre("updateOne", function (next) {
-  const { price } = this.property;
-  const { status } = this.body;
-
-  if (status?.available) {
-    if (!price) throw errorResponse(422, "price is required");
-  }
-  next();
-});
-/**
- * /////////////////////////////////////////////////////////////////////////////
- */
-/**
- *
- * * FIND ALL
+//  * FIND ALL
  *
  */
 propertySchema.statics.findAllStatics = async function (req) {
   const { id } = req.auth;
-  const arr = await this.find({ owner: id }).populate({ path: "agreement" });
+  const arr = await this.find({ owner: id })
+    .populate({ path: "occupant" })
+    .populate({ path: "agreement" })
+    .populate({ path: "rents" })
+    .populate({ path: "notifications" });
   if (!arr.length) throw errorResponse(204);
   return arr;
 };
@@ -135,7 +169,11 @@ propertySchema.statics.findAllStatics = async function (req) {
  *
  */
 propertySchema.statics.findByIdStatics = async function (id) {
-  const property = await this.findById(id).populate({ path: "agreement" });
+  const property = await this.findById(id)
+    .populate({ path: "occupant" })
+    .populate({ path: "agreement" })
+    .populate({ path: "rents" })
+    .populate({ path: "notifications" });
   if (property) return property;
 
   throw errorResponse(404, "property not found");
@@ -147,15 +185,26 @@ propertySchema.statics.findByIdStatics = async function (id) {
  */
 propertySchema.statics.updateStatics = async function (req) {
   const { property, body } = req;
-  const updated = await property.updateOne(body);
+  const updated = await property.updateOne(body, { runValidators: true });
   if (updated.acknowledged)
-    return this.findById(property._id).populate({ path: "agreement" });
+    return this.findById(property._id)
+      .populate({ path: "occupant" })
+      .populate({ path: "agreement" })
+      .populate({ path: "rents" })
+      .populate({ path: "notifications" });
 
   throw errorResponse(422, "could not update user");
 };
-/**
- * /////////////////////////////////////////////////////////////////////////////
- */
+//
+//
+//
+//
+// ? ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ? ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//
+//
 /**
  *
  * * EXPORT MODEL

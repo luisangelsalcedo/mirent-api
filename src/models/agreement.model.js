@@ -1,12 +1,12 @@
 import mongoose from "mongoose";
 import moment from "moment";
-import { errorResponse, objectPropertyExiste } from "../utils/index.js";
+import {
+  errorResponse,
+  objectPropertyExiste,
+  getPropertyByID,
+} from "../utils/index.js";
 import { agreementSchema, agreementDefaultStatus } from "../schemas/index.js";
 
-const findProperty = async (id) => {
-  const property = await mongoose.model("Property").findById(id);
-  return property;
-};
 /**
  * * VALIDATE
  * valida que solo se pueda registrar una propiedad que tenga estado disponible
@@ -23,36 +23,89 @@ agreementSchema.path("property").validate({
   },
   message: "add an available property",
 });
-
 /**
- * * MIDDLEWARE SAVE
- * valida que la propiedad no este inscrita en otra contrato
- * a menos que el contrato este archivado
+ * Validamos si el ocupante existe
  */
-agreementSchema.pre("save", async function (next) {
-  const agreement = await mongoose
-    .model("Agreement")
-    .findOne({ property: this.property });
-
-  if (agreement?.status.disabled || agreement?.status.active)
-    throw errorResponse(403, "property is already taken");
-  next();
+agreementSchema.path("occupant").validate({
+  async validator(occupant) {
+    return mongoose
+      .model("User")
+      .findById(occupant)
+      .then((find) => find);
+  },
+  message: "occupant not found",
 });
 /**
- * despues de guardar el contrato cambiamos la propiedad a estado alquilado (rented)
+ * validamos que el ocupante sea diferente que el propietario
+ */
+agreementSchema.path("occupant").validate({
+  async validator(occupant) {
+    let property;
+    if (this.property) property = this.property;
+    else property = this.agreement.property;
+
+    return mongoose
+      .model("Property")
+      .findById(property)
+      .then((find) => String(find.owner) !== String(occupant));
+  },
+  message: "occupant must be different from owner",
+});
+/**
+ * validamos que la fecha de inicio sea mayor a la actual (now)
+ */
+agreementSchema.path("startdate").validate({
+  validator(startdate) {
+    return moment().format("x") < moment(startdate).format("x");
+  },
+  message: "start date must not be earlier than today",
+});
+/**
+ * validamos que la fecha de final sea mayor que la de inicio
+ */
+agreementSchema.path("enddate").validate({
+  validator(enddate) {
+    let startdate;
+    if (this.startdate) {
+      startdate = this.startdate;
+    } else {
+      startdate = this.agreement.startdate;
+    }
+    return moment(startdate).format("x") < moment(enddate).format("x");
+  },
+  message: "end date greater than start date",
+});
+//
+//
+//
+//
+// ? ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ? ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//
+//
+/**
+ *
+ * * MIDDLEWARE SAVE
+ * guardamos el contrato en la propiedad
+ *
  */
 agreementSchema.post("save", async function (agreement) {
-  const property = await findProperty(agreement.property);
-  const updated = await property.updateOne({
+  const { _id: agreementID, property: propertyID } = agreement;
+  const property = await getPropertyByID(propertyID);
+
+  const arr = [...property.agreement, agreementID];
+  await property.updateOne({
     status: { rented: true },
-    agreement: agreement._id,
+    agreement: arr,
   });
-  if (!updated.acknowledged)
-    throw errorResponse(500, "the related property did not change state");
 });
 /**
+ *
  * * MIDDLEWARE REMOVE
  *  valida que solo se pueda eliminar el contrato cuando este desabilitado o archivado
+ *
  */
 agreementSchema.pre("remove", function (next) {
   if (this.status.disabled || this.status.archived) next();
@@ -62,20 +115,29 @@ agreementSchema.pre("remove", function (next) {
   );
 });
 /**
- * despues de eliminar el contrato cambiarmos la propiedad a estado disponible (available)
+ * eliminamos el contrato en la propiedad
  */
 agreementSchema.post("remove", async function (agreement) {
-  const property = await findProperty(agreement.property);
-  await property.updateOne({ status: { available: true } });
-  const updated2 = await property.updateOne({ agreement: null });
-  if (!updated2.acknowledged)
-    throw errorResponse(500, "the related property did not change state");
+  const { _id: agreementID, property: propertyID } = agreement;
+  const property = await getPropertyByID(propertyID);
+
+  const arr = [...property.agreement].filter(
+    (a) => String(a) !== String(agreementID)
+  );
+  await property.updateOne({
+    status: { maintenance: true },
+    agreement: arr,
+  });
 });
 /**
+/**
+ *
  * * MIDDLEWARE UPDATE
  * valida que existan elementos para actualizar
- * creamos una propiedad body donde incertamos los datos que vamos a actualizar
+ * creamos una propiedad body donde insertamos los datos que vamos a actualizar
+ *
  */
+
 agreementSchema.pre("updateOne", function (next) {
   if (this._update) {
     const { $set, $setOnInsert, ...res } = this._update;
@@ -85,7 +147,9 @@ agreementSchema.pre("updateOne", function (next) {
   throw errorResponse(422, "empty content");
 });
 /**
+ *
  * valida que NO se pueda editar la propiedad
+ *
  */
 agreementSchema.pre("updateOne", function (next) {
   const { property } = this.body;
@@ -93,11 +157,13 @@ agreementSchema.pre("updateOne", function (next) {
   next();
 });
 /**
+ *
  * buscamos el documento agreement que vamos a actualizar y validamos según su estado
- * DESABILITADO: No se puede firmar o genera pagos o notificaciones, está permitido lo demás
+ * DESABILITADO: No se puede firmar está permitido lo demás
  * ACTIVO: Se puede modificar solo el estado, la firma y seleccionar el ocupante
- * FIRMADO: Se puede modificar solo el estado, generar pagos y notificaciones
+ * FIRMADO: Se puede modificar solo el estado
  * ARCHIVADO: no se puede editar ningún campo
+ *
  */
 agreementSchema.pre("updateOne", async function (next) {
   const agreement = await this.model.findOne(this._conditions);
@@ -106,13 +172,9 @@ agreementSchema.pre("updateOne", async function (next) {
 
   // DESABILITADO
   if (disabled) {
-    const { sign, rents, notifications } = this.body;
+    const { sign } = this.body;
     if (sign)
       throw errorResponse(403, "activate the agreement to be able to sign it");
-    if (rents)
-      throw errorResponse(403, "activate the agreement to make payments");
-    if (notifications)
-      throw errorResponse(403, "activate the agreement to make notifications");
     next();
   }
 
@@ -126,7 +188,7 @@ agreementSchema.pre("updateOne", async function (next) {
 
   // FIRMADO
   if (signed) {
-    const { status, rents, notifications, ...res } = this.body;
+    const { status, ...res } = this.body;
     if (Object.keys(res).length)
       throw errorResponse(403, "cannot modify an signed agreement");
     next();
@@ -138,7 +200,9 @@ agreementSchema.pre("updateOne", async function (next) {
   }
 });
 /**
+ *
  * actualizamos el estado basandonos en la lista de estados por defecto
+ *
  */
 agreementSchema.pre("updateOne", function (next) {
   const { status } = this._update;
@@ -156,99 +220,73 @@ agreementSchema.pre("updateOne", function (next) {
  * validamos los requisitos minimos para activar o firmar el contrato
  */
 agreementSchema.pre("updateOne", function (next) {
-  const { occupant, sign, startdate, enddate, details } = this.agreement;
+  const { occupant, sign, details } = this.agreement;
   const { status } = this.body;
 
   if (status?.active) {
-    if (!startdate) throw errorResponse(403, "startdate is required");
-    if (!enddate) throw errorResponse(403, "enddate is required");
     if (!details) throw errorResponse(403, "details is required");
   }
 
   if (status?.signed) {
     if (!occupant) throw errorResponse(403, "occupant is required");
     if (!sign) throw errorResponse(403, "sign is required");
-    if (!startdate) throw errorResponse(403, "stardate is required");
     next();
   }
   next();
 });
 /**
- * startdate: Tiene que ser mayor a la fecha actual
- * enddate: contrato minimo 1 año
- */
-agreementSchema.pre("updateOne", function (next) {
-  const { startdate: thisStart } = this.agreement;
-  const { startdate, enddate } = this.body;
-  if (startdate) {
-    const start = moment(startdate).format("x");
-    if (start < Date.now())
-      throw errorResponse(422, "the start date must not be earlier than today");
-  }
-  // if (enddate) {
-  //   const addYear = moment(thisStart).add(1, "years").format("x");
-  //   const newAddYear = moment(startdate).add(1, "years").format("x");
-  //   const end = moment(enddate).format("x");
-  //   if (end < addYear || end < newAddYear)
-  //     throw errorResponse(422, "Contract period of at least one year.");
-  // }
-  next();
-});
-/**
- * Validamos si el ocupante existe
- * validamos que el ocupante sea diferente que el propietario
- */
-agreementSchema.pre("updateOne", async function (next) {
-  const { occupant } = this.body;
-  const { property } = await this.agreement.populate("property");
-  if (occupant) {
-    const find = await mongoose.model("User").findById(occupant);
-    if (!find) throw errorResponse(404, "occupant not found");
-
-    if (String(property.owner) === String(occupant))
-      throw errorResponse(403, "invalid occupant, choose another");
-  }
-});
-/**
  * si archivamos el agreement cambiamos la propiedad vincuada a estado disponible (available)
  */
 agreementSchema.post("updateOne", async function () {
-  const agreement = await this.model.findOne(this._conditions);
-  const { status } = agreement;
+  const { property: propertyID } = this.agreement;
+  const { status } = this.body;
 
   if (status.archived) {
-    const property = await findProperty(agreement.property);
-    await property.updateOne({ status: { available: true } });
-    const updated2 = await property.updateOne({ agreement: null });
-    if (!updated2.acknowledged)
-      throw errorResponse(500, "the related property did not change state");
+    const property = await getPropertyByID(propertyID);
+    await property.updateOne({ status: { maintenance: true } });
   }
 });
+
+//
+//
+//
+//
+// ? ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ? ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//
+//
 /**
- * /////////////////////////////////////////////////////////////////////////////
+ *
+ * * CREATE BY PROPERTY
+ *
  */
+agreementSchema.statics.createStatics = async function (req) {
+  const { params, body } = req;
+  const { id: propertyID } = params;
+
+  Object.assign(body, { property: propertyID });
+  const newDoc = body;
+  const agreement = await this.create(newDoc);
+  if (agreement) return agreement.populate("property");
+  throw errorResponse(500, "agreement was not created");
+};
 /**
  *
  * * GET ALL BY PROPERTY
  *
  */
-agreementSchema.statics.findAllByPropertyStatics = async function (req) {
-  const { property } = req.params;
-  const arr = await this.find({
-    property,
-  })
+agreementSchema.statics.findAllStatics = async function (req) {
+  const { id: propertyID } = req.params;
+  const arr = await this.find({ property: propertyID })
     .populate({
       path: "property",
     })
     .populate({
       path: "occupant",
-    })
-    .populate({
-      path: "rents",
-    })
-    .populate({
-      path: "notifications",
     });
+
   return arr;
 };
 /**
@@ -259,9 +297,8 @@ agreementSchema.statics.findAllByPropertyStatics = async function (req) {
 agreementSchema.statics.findByIdStatics = async function (id) {
   const agreement = await this.findById(id)
     .populate({ path: "property" })
-    .populate({ path: "occupant" })
-    .populate({ path: "rents" })
-    .populate({ path: "notifications" });
+    .populate({ path: "occupant" });
+
   if (agreement) return agreement;
   throw errorResponse(404, "agreement not found");
 };
@@ -273,18 +310,23 @@ agreementSchema.statics.findByIdStatics = async function (id) {
 agreementSchema.statics.updateStatics = async function (req) {
   const { agreement, body } = req;
 
-  const updated = await agreement.updateOne(body);
+  const updated = await agreement.updateOne(body, { runValidators: true });
   if (updated.acknowledged)
     return this.findById(agreement._id)
       .populate({ path: "property" })
-      .populate({ path: "occupant" })
-      .populate({ path: "rents" })
-      .populate({ path: "notifications" });
+      .populate({ path: "occupant" });
   throw errorResponse(404, "could not update agreement");
 };
-/**
- * /////////////////////////////////////////////////////////////////////////////
- */
+//
+//
+//
+//
+// ? ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ? ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//
+//
 /**
  * * EXPORT MODEL
  */

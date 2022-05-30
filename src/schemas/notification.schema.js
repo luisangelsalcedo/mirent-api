@@ -13,12 +13,12 @@ const notificacionSchema = new Schema(
       ref: "User",
       required: [true, "is required"],
     },
-    agreement: {
+    viewed: { type: Boolean, default: false },
+    property: {
       type: Schema.Types.ObjectId,
-      ref: "Agreement",
+      ref: "Property",
       required: [true, "is required"],
     },
-    viewed: { type: Boolean, default: false },
   },
   {
     versionKey: false,

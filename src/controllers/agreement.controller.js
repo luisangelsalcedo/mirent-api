@@ -2,12 +2,11 @@ import Agreement from "../models/agreement.model.js";
 import { successResponse, errorResponse } from "../utils/index.js";
 
 /**
- ##  createAgreement
+ ##  createAgreement (by property)
  */
 const createAgreement = async (req, res, next) => {
   try {
-    const agreement = await Agreement.create(req.body);
-    await agreement.populate("property");
+    const agreement = await Agreement.createStatics(req);
     successResponse(res, 201, "agreement created", agreement);
   } catch (error) {
     next(error);
@@ -15,22 +14,11 @@ const createAgreement = async (req, res, next) => {
 };
 
 /**
- * ! Process
- * ## getAllAgreement
+ * ## getAllAgreement (by property)
  */
 const getAllAgreement = async (req, res, next) => {
   try {
-    res.send("getAllAgreement");
-  } catch (error) {
-    next(error);
-  }
-};
-/**
- * ## getAllAgreementByProperty
- */
-const getAllAgreementByProperty = async (req, res, next) => {
-  try {
-    const arrAgreement = await Agreement.findAllByPropertyStatics(req);
+    const arrAgreement = await Agreement.findAllStatics(req);
 
     if (!arrAgreement.length) successResponse(res, 204);
     else successResponse(res, 200, null, arrAgreement);
@@ -90,7 +78,6 @@ const deleteAgreement = async (req, res, next) => {
 export {
   createAgreement,
   getAllAgreement,
-  getAllAgreementByProperty,
   getAgreementById,
   getOneAgreement,
   updateAgreement,

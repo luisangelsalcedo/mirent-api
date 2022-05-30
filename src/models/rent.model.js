@@ -1,32 +1,61 @@
 import mongoose from "mongoose";
 import moment from "moment";
-import { errorResponse, objectPropertyExiste } from "../utils/index.js";
+import {
+  errorResponse,
+  objectPropertyExiste,
+  getPropertyByID,
+} from "../utils/index.js";
 import { rentSchema, rentDefaultStatus } from "../schemas/index.js";
 
 /**
- * * VIRTUAL DAYSTOEXPIRED
- *  Creamos el name por defecto
- */
-rentSchema.virtual("daysToExpired").get(function () {
-  const pay = moment(this.paydate);
-  const now = moment();
-  const result = moment.duration(pay.diff(now)).days();
-  return result;
-});
-/**
- * * VALIDATE
- *  Creamos el name por defecto
+ *
+ * validamos que la fecha de pago sea mayor a la actual (now)
+ *
  */
 rentSchema.path("paydate").validate({
-  validator() {
-    return this.daysToExpired >= -2;
+  validator(paydate) {
+    return moment().format("x") < moment(paydate).format("x");
   },
-  message: "pay date must not be earlier than two days from today",
+  message: "pay date must not be earlier than today",
 });
-
 /**
+ *
+ * Valida que la cantidad sea solo números
+ *
+ */
+rentSchema.path("amound").validate({
+  async validator(amound) {
+    return Number(amound);
+  },
+  message: "only required numbers",
+});
+//
+//
+//
+//
+// ? ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ? ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//
+//
+/**
+ *
  * * MIDDLEWARE SAVE
+ * verificamos que la propiedad tenga estado rentado para generar una renta
+ *
+ */
+rentSchema.pre("save", async function (next) {
+  const { _id: rentID, property: propertyID } = this;
+  const property = await getPropertyByID(propertyID);
+
+  if (!property.status.rented)
+    throw errorResponse(403, "sign the agreement to generate an rent");
+});
+/**
+ *
  *  Creamos el name por defecto
+ *
  */
 rentSchema.pre("save", function (next) {
   const date = moment(this.paydate).format("LL");
@@ -34,28 +63,45 @@ rentSchema.pre("save", function (next) {
   next();
 });
 /**
+ *
+ * guardamos la renta en la propiedad
+ *
+ */
+rentSchema.post("save", async function (rent) {
+  const { _id: rentID, property: propertyID } = rent;
+  const property = await getPropertyByID(propertyID);
+
+  const arr = [...property.rents, rentID];
+  await property.updateOne({ rents: arr });
+});
+/**
+ *
  * * MIDDLEWARE REMOVE
  *  solo elimina rentas pendientes
+ *
  */
 rentSchema.pre("remove", function (next) {
   if (this.status.pending) next();
   throw errorResponse(403, "only unpaid rents can be deleted");
 });
 /**
- *  Despues de eliminar la renta, la elimina del contrato
+ *  eliminamos la renta en la propiedad
  */
 rentSchema.post("remove", async function (rent) {
-  const agreement = await mongoose.model("Agreement").findById(rent.agreement);
-  const arrRents = agreement.rents.filter(
-    (r) => String(r) !== String(rent._id)
-  );
+  const { _id: rentID, property: propertyID } = rent;
+  const property = await getPropertyByID(propertyID);
 
-  await agreement.updateOne({ rents: arrRents });
+  const arr = [...property.rents].filter((r) => String(r) !== String(rentID));
+  await property.updateOne({
+    rents: arr,
+  });
 });
 /**
+ *
  * * MIDDLEWARE UPDATE
  * valida que existan elementos para actualizar
  * creamos una propiedad body donde incertamos los datos que vamos a actualizar
+ *
  */
 rentSchema.pre("updateOne", function (next) {
   if (this._update) {
@@ -66,22 +112,26 @@ rentSchema.pre("updateOne", function (next) {
   throw errorResponse(422, "empty content");
 });
 /**
- * valida que NO se pueda editar la referencia al contrato
+ *
+ * valida que NO se pueda editar la propiedad
+ *
  */
 rentSchema.pre("updateOne", function (next) {
-  const { agreement } = this.body;
-  if (agreement) throw errorResponse(403, "agreement can not be modify");
+  const { property } = this.body;
+  if (property) throw errorResponse(403, "property can not be modify");
   next();
 });
-
 /**
+ *
  * buscamos el documento rent que vamos a actualizar y validamos según su estado
  * PENDIENTE: se puede editar todos los campos
  * PAGADO: no se puede editar
  * EXPIRADO: solo se puede editar el estado
+ *
  */
 rentSchema.pre("updateOne", async function (next) {
   const rent = await this.model.findOne(this._conditions);
+  this.rent = rent;
   const { pending, paymented, expired } = rent.status;
 
   // PENDIENTE
@@ -96,16 +146,18 @@ rentSchema.pre("updateOne", async function (next) {
 
   // EXPIRADO
   if (expired) {
-    const { status, ...res } = this.body;
+    const { status, stripe, paid, ...res } = this.body;
     if (Object.keys(res).length)
       throw errorResponse(403, "cannot be modified, switch to pending to edit");
     next();
   }
 });
 /**
+ *
  * actualizamos el estado basandonos en la lista de estados por defecto
+ *
  */
-rentSchema.pre("updateOne", async function (next) {
+rentSchema.pre("updateOne", function (next) {
   const { status } = this._update;
   if (status) {
     const key = Object.keys(status)[0];
@@ -117,38 +169,42 @@ rentSchema.pre("updateOne", async function (next) {
   }
   next();
 });
-/**
- * /////////////////////////////////////////////////////////////////////////////
- */
+//
+//
+//
+//
+// ? ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ? ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//
+//
 /**
  *
- * * CREATE
- * validar agreement status ACTIVO
- * registra la renta en el contrato luego de crearlo
+ * * CREATE BY PROPERTY
  *
  */
-rentSchema.statics.createByAgreementStatics = async function (req) {
-  const { agreement, body } = req;
+rentSchema.statics.createStatics = async function (req) {
+  const { params, body } = req;
+  const { id: propertyID } = params;
 
-  if (!agreement?.status.signed)
-    throw errorResponse(500, "sign the agreement to generate an rent");
-
-  const rent = await this.create({ ...body, agreement: agreement._id });
-  if (!rent) throw errorResponse(500, "rent was not created");
-
-  const arrRents = [...agreement.rents, rent._id];
-  await agreement.updateOne({ rents: arrRents });
-  return rent;
+  Object.assign(body, { property: propertyID });
+  const newDoc = body;
+  const rent = await this.create(newDoc);
+  if (rent) return rent.populate("property");
+  throw errorResponse(500, "rent was not created");
 };
 /**
  *
- * * FIND ALL
+ * * FIND ALL BY PROPERTY
  *
  */
-rentSchema.statics.getAllByAgreementStatics = async function (req) {
-  const { agreement } = req;
-  await agreement.populate("rents");
-  const arr = agreement.rents;
+rentSchema.statics.getAllStatics = async function (req) {
+  const { id: propertyID } = req.params;
+  const arr = await this.find({ property: propertyID }).populate({
+    path: "property",
+  });
+
   return arr;
 };
 /**
@@ -168,13 +224,20 @@ rentSchema.statics.findByIdStatics = async function (id) {
  */
 rentSchema.statics.updateStatics = async function (req) {
   const { rent, body } = req;
-  const updated = await rent.updateOne(body);
+  const updated = await rent.updateOne(body, { runValidators: true });
   if (updated.acknowledged) return this.findById(rent._id);
   throw errorResponse(404, "could not update rent");
 };
-/**
- * /////////////////////////////////////////////////////////////////////////////
- */
+//
+//
+//
+//
+// ? ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ? ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
+//
+//
+//
 /**
  * * EXPORT MODEL
  */

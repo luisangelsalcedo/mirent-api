@@ -10,7 +10,9 @@
 <img src="https://img.stackshare.io/package/19054/default_2be036aaca5c71baf790e00f1ef80dd37a625905.png" width='28'/>&nbsp;&nbsp;
 <img src="https://progsoft.net/images/ejs-icon-bccf3f017751a71ee75c69021ee1020fc0d9067e.jpg" width='28'/>&nbsp;&nbsp;
 <img src="https://cloudinary-res.cloudinary.com/image/upload/website/cloudinary_web_favicon.png" width="30"/>&nbsp;&nbsp;
+<img src="https://avatars.githubusercontent.com/u/4129662?s=28&v=4"/>&nbsp;&nbsp;
 <img src="https://repository-images.githubusercontent.com/1272424/d1995000-0ab7-11ea-8ed3-04a082c36b0d" width="55"/>&nbsp;&nbsp;
+<img src="https://user-images.githubusercontent.com/3025322/87547253-bf050400-c6a2-11ea-950a-280311bc6cc8.png" width='32'/>&nbsp;&nbsp;
 <img src="https://iconape.com/wp-content/png_logo_vector/jest-logo.png" width="26"/>&nbsp;&nbsp;
 <img src="https://img.icons8.com/color/32/000000/heroku.png"/>&nbsp;&nbsp;
 

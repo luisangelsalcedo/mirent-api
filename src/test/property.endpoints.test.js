@@ -20,6 +20,7 @@ beforeAll(async () => {
 
   propertyMock = {
     name: `inmueble ${Date.now()}`,
+    price: "100",
   };
 });
 
@@ -182,7 +183,7 @@ describe("Pruebas de endpoint: Actualizar propiedad", () => {
       name: "Casa de playa",
       address: "Av. El Sol 503, Mancora",
       details: "Casa cera al mar",
-      price: 250,
+      price: "250",
     };
     const { status, data } = await axios.put(
       `${endpoint}/${propertyValid._id}`,
