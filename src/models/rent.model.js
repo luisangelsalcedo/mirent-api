@@ -1,11 +1,13 @@
 import mongoose from "mongoose";
 import moment from "moment";
+import Stripe from "stripe";
+import { config } from "../config/index.js";
+import { rentSchema, rentDefaultStatus } from "../schemas/index.js";
 import {
   errorResponse,
   objectPropertyExiste,
   getPropertyByID,
 } from "../utils/index.js";
-import { rentSchema, rentDefaultStatus } from "../schemas/index.js";
 
 /**
  *
@@ -23,9 +25,9 @@ rentSchema.path("paydate").validate({
  * Valida que la cantidad sea solo números
  *
  */
-rentSchema.path("amound").validate({
-  async validator(amound) {
-    return Number(amound);
+rentSchema.path("amount").validate({
+  async validator(amount) {
+    return Number(amount);
   },
   message: "only required numbers",
 });
@@ -59,7 +61,7 @@ rentSchema.pre("save", async function (next) {
  */
 rentSchema.pre("save", function (next) {
   const date = moment(this.paydate).format("LL");
-  this.name ??= `Rent ${date}`;
+  if (!this.name) this.name = `Rent ${date}`;
   next();
 });
 /**
@@ -81,8 +83,9 @@ rentSchema.post("save", async function (rent) {
  *
  */
 rentSchema.pre("remove", function (next) {
-  if (this.status.pending) next();
-  throw errorResponse(403, "only unpaid rents can be deleted");
+  if (this.status.paymented)
+    throw errorResponse(403, "this payment has already been made");
+  next();
 });
 /**
  *  eliminamos la renta en la propiedad
@@ -213,7 +216,9 @@ rentSchema.statics.getAllStatics = async function (req) {
  *
  */
 rentSchema.statics.findByIdStatics = async function (id) {
-  const rent = await this.findById(id);
+  const rent = await this.findById(id).populate({
+    path: "property",
+  });
   if (rent) return rent;
   throw errorResponse(404, "rent not found");
 };
@@ -225,7 +230,54 @@ rentSchema.statics.findByIdStatics = async function (id) {
 rentSchema.statics.updateStatics = async function (req) {
   const { rent, body } = req;
   const updated = await rent.updateOne(body, { runValidators: true });
-  if (updated.acknowledged) return this.findById(rent._id);
+  if (updated.acknowledged)
+    return this.findById(rent._id).populate({
+      path: "property",
+    });
+  throw errorResponse(404, "could not update rent");
+};
+/**
+ *
+ * * UPDATE
+ *
+ */
+const stripe = new Stripe(config.stripe.secretKey);
+
+rentSchema.statics.pay = async function (req) {
+  const { body, rent } = req;
+  const { id } = body;
+
+  if (rent.status.paymented)
+    throw errorResponse(403, "this payment has already been made");
+
+  const { name: occupant, dni } = await mongoose
+    .model("User")
+    .findById(rent.property.occupant);
+
+  const { amount, name, details } = rent;
+
+  const paymentObj = {
+    amount: amount * 100,
+    currency: "USD",
+    description: `${rent.property.name}: ${name} | ${occupant}, DNI:${dni} (${details})`,
+    payment_method: id,
+    confirm: true,
+  };
+
+  await stripe.paymentIntents.create(paymentObj);
+
+  const update = {
+    status: { paymented: true },
+    paid: new Date(),
+    stripe: paymentObj,
+  };
+
+  const updated = await rent.updateOne(update);
+  if (updated.acknowledged)
+    return this.findById(rent._id).populate({
+      path: "property",
+    });
+
   throw errorResponse(404, "could not update rent");
 };
 //

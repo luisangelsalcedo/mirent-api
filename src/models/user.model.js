@@ -198,6 +198,7 @@ userSchema.statics.verifyToken = async function (req) {
  */
 userSchema.statics.findUsername = async function (req) {
   const { email } = req.body;
+
   if (!email) throw errorResponse(422, "email is required");
 
   const validEmail = expreg.email.test(email);
@@ -246,7 +247,7 @@ userSchema.statics.inviteUser = async function (req) {
   const { user, body } = req;
   const { email } = body;
 
-  const finded = await this.findOne({ email, active: true });
+  const finded = await this.findOne({ email });
   if (finded) {
     if (finded.email === user.email)
       throw errorResponse(403, "The owner cannot be a tenant");

@@ -22,7 +22,7 @@ const rentSchema = new Schema(
       required: [true, "is required"],
     },
     paid: Date,
-    amound: {
+    amount: {
       type: String,
       required: [true, "is required"],
       trim: true,
@@ -40,7 +40,7 @@ const rentSchema = new Schema(
       type: Object,
       default: {
         id: null,
-        amound: null,
+        amount: null,
       },
     },
   },

@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { getAllPropertyByOccupant } from "../controllers/property.controller.js";
 import {
   login,
   createUser,
@@ -35,5 +36,6 @@ userRouter
   .delete(deleteUser);
 userRouter.post("/api/user/:id/invitation", inviteUser);
 userRouter.post("/api/user/:id/sendinvitation", sendInviteUser);
+userRouter.get("/api/user/:id/property", getAllPropertyByOccupant);
 
 export default userRouter;

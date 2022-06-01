@@ -8,18 +8,18 @@ import { propertySchema, propertyDefaultStatus } from "../schemas/index.js";
  * valida que no exista otra propiedad con un nombre repetido (owner)
  *
  */
-propertySchema.path("name").validate({
-  async validator(name) {
-    let owner;
-    if (this.owner) owner = this.owner;
-    else owner = this.property.owner;
-    return mongoose
-      .model("Property")
-      .findOne({ name, owner })
-      .then((property) => !property);
-  },
-  message: "is already taken",
-});
+// propertySchema.path("name").validate({
+//   async validator(name) {
+//     let owner;
+//     if (this.owner) owner = this.owner;
+//     else owner = this.property.owner;
+//     return mongoose
+//       .model("Property")
+//       .findOne({ name, owner })
+//       .then((property) => !property);
+//   },
+//   message: "is already taken",
+// });
 /**
  *
  * Valida que el precio sea solo números
@@ -107,7 +107,7 @@ propertySchema.pre("updateOne", async function (next) {
 
   // DISPONIBLE
   if (available) {
-    const { status, agreement, notificacions, ...res } = this.body;
+    const { status, agreement, occupant, notificacions, ...res } = this.body;
     if (Object.keys(res).length)
       throw errorResponse(403, "only status can be updated");
     next();
@@ -115,7 +115,7 @@ propertySchema.pre("updateOne", async function (next) {
 
   // ALQUILADO
   if (rented) {
-    const { status, rents, notificacions, ...res } = this.body;
+    const { status, rents, occupant, notificacions, ...res } = this.body;
     if (Object.keys(res).length)
       throw errorResponse(403, "cannot be modified when rented");
     next();
@@ -138,6 +138,7 @@ propertySchema.pre("updateOne", function (next) {
   }
   next();
 });
+
 //
 //
 //

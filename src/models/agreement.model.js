@@ -96,8 +96,8 @@ agreementSchema.post("save", async function (agreement) {
   const property = await getPropertyByID(propertyID);
 
   const arr = [...property.agreement, agreementID];
+
   await property.updateOne({
-    status: { rented: true },
     agreement: arr,
   });
 });
@@ -115,7 +115,7 @@ agreementSchema.pre("remove", function (next) {
   );
 });
 /**
- * eliminamos el contrato en la propiedad
+ * eliminamos el contrato en la propiedad y el occupant
  */
 agreementSchema.post("remove", async function (agreement) {
   const { _id: agreementID, property: propertyID } = agreement;
@@ -127,6 +127,7 @@ agreementSchema.post("remove", async function (agreement) {
   await property.updateOne({
     status: { maintenance: true },
     agreement: arr,
+    occupant: null,
   });
 });
 /**
@@ -206,6 +207,7 @@ agreementSchema.pre("updateOne", async function (next) {
  */
 agreementSchema.pre("updateOne", function (next) {
   const { status } = this._update;
+
   if (status) {
     const key = Object.keys(status)[0];
     if (!objectPropertyExiste(agreementDefaultStatus, key))
@@ -214,13 +216,14 @@ agreementSchema.pre("updateOne", function (next) {
     const updated = { ...agreementDefaultStatus, ...status };
     this._update.status = updated;
   }
+
   next();
 });
 /**
  * validamos los requisitos minimos para activar o firmar el contrato
  */
-agreementSchema.pre("updateOne", function (next) {
-  const { occupant, sign, details } = this.agreement;
+agreementSchema.pre("updateOne", async function (next) {
+  const { sign, details } = this.agreement;
   const { status } = this.body;
 
   if (status?.active) {
@@ -228,10 +231,14 @@ agreementSchema.pre("updateOne", function (next) {
   }
 
   if (status?.signed) {
-    if (!occupant) throw errorResponse(403, "occupant is required");
     if (!sign) throw errorResponse(403, "sign is required");
+
+    const { property: propertyID } = this.agreement;
+    const property = await getPropertyByID(propertyID);
+    await property.updateOne({ status: { rented: true } });
     next();
   }
+
   next();
 });
 /**
@@ -241,9 +248,9 @@ agreementSchema.post("updateOne", async function () {
   const { property: propertyID } = this.agreement;
   const { status } = this.body;
 
-  if (status.archived) {
+  if (status?.archived) {
     const property = await getPropertyByID(propertyID);
-    await property.updateOne({ status: { maintenance: true } });
+    await property.updateOne({ status: { maintenance: true }, occupant: null });
   }
 });
 

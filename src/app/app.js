@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+
 import userRoutes from "../routes/user.routes.js";
 import propertyRoutes from "../routes/property.routes.js";
 import agreementRoutes from "../routes/agreement.routes.js";
@@ -10,6 +11,8 @@ import { authentication, errorHandler } from "../middlewares/index.js";
 
 // database
 import "./database.js";
+
+// moment
 
 // server
 const app = express();

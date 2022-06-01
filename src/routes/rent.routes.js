@@ -4,6 +4,7 @@ import {
   getOneRent,
   updateRent,
   deleteRent,
+  payRent,
 } from "../controllers/rent.controller.js";
 
 const router = Router();
@@ -13,5 +14,7 @@ router
   .get(getOneRent)
   .put(updateRent)
   .delete(deleteRent);
+
+router.post("/api/rent/:id/pay", payRent);
 
 export default router;

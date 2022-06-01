@@ -1,5 +1,6 @@
-import { successResponse } from "../utils/index.js";
 import Rent from "../models/rent.model.js";
+import { successResponse } from "../utils/index.js";
+import { config } from "../config/index.js";
 
 /**
  ##  createRent (by property)
@@ -71,6 +72,15 @@ const deleteRent = async (req, res, next) => {
   }
 };
 
+const payRent = async (req, res, next) => {
+  try {
+    const paymented = await Rent.pay(req);
+    successResponse(res, 200, "pay success", paymented);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export {
   createRent,
   getAllRent,
@@ -78,4 +88,5 @@ export {
   getOneRent,
   updateRent,
   deleteRent,
+  payRent,
 };
