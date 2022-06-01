@@ -1,21 +1,13 @@
 import { Router } from "express";
-import { getAgreementById } from "../controllers/agreement.controller.js";
 import {
-  createRentByAgreement,
-  getAllRentByAgreement,
   getRentById,
   getOneRent,
   updateRent,
   deleteRent,
+  payRent,
 } from "../controllers/rent.controller.js";
 
 const router = Router();
-router.param("agreement", getAgreementById);
-router
-  .route("/api/rent/agreement/:agreement")
-  .post(createRentByAgreement)
-  .get(getAllRentByAgreement);
-
 router.param("id", getRentById);
 router
   .route("/api/rent/:id")
@@ -23,5 +15,6 @@ router
   .put(updateRent)
   .delete(deleteRent);
 
-//
+router.post("/api/rent/:id/pay", payRent);
+
 export default router;

@@ -9,17 +9,40 @@ export const rentDefaultStatus = {
 const { Schema } = mongoose;
 const rentSchema = new Schema(
   {
-    status: { type: Object, default: { ...rentDefaultStatus, pending: true } },
-    name: { type: String, trim: true },
-    agreement: {
-      type: Schema.Types.ObjectId,
-      ref: "Agreement",
+    status: {
+      type: Object,
+      default: { ...rentDefaultStatus, pending: true },
+    },
+    name: {
+      type: String,
+      trim: true,
+    },
+    paydate: {
+      type: Date,
       required: [true, "is required"],
     },
-    paydate: { type: Date, required: [true, "is required"] },
-    payouted: Date,
-    payment: { type: Number, required: [true, "is required"], trim: true },
-    details: { type: String, trim: true },
+    paid: Date,
+    amount: {
+      type: String,
+      required: [true, "is required"],
+      trim: true,
+    },
+    details: {
+      type: String,
+      trim: true,
+    },
+    property: {
+      type: Schema.Types.ObjectId,
+      ref: "Property",
+      required: [true, "is required"],
+    },
+    stripe: {
+      type: Object,
+      default: {
+        id: null,
+        amount: null,
+      },
+    },
   },
   {
     versionKey: false,

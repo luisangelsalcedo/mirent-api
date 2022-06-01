@@ -28,4 +28,7 @@ export const config = {
     key: process.env.CLOUDINARY_API_KEY,
     secret: process.env.CLOUDINARY_API_SECRET,
   },
+  stripe: {
+    secretKey: process.env.STRIPE_SECRET_KEY,
+  },
 };

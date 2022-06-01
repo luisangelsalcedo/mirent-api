@@ -7,6 +7,7 @@ import { sendMail } from "./sendMail.js";
 import { userDefault } from "./userDefault.js";
 import { destroyImgCloudinary } from "./destroyImgCloudinary.js";
 import { isDni } from "./validators.js";
+import { getPropertyByID } from "./getPropertyByID.js";
 
 export {
   generateJWT,
@@ -18,4 +19,5 @@ export {
   userDefault,
   destroyImgCloudinary,
   isDni,
+  getPropertyByID,
 };

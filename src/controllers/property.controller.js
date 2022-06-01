@@ -65,7 +65,25 @@ const deleteProperty = async (req, res, next) => {
   try {
     const { property } = req;
     const deleted = await property.remove();
+    await deleted;
+
     successResponse(res, 200, "delected property", deleted);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getAllPropertyByOccupant = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const arrPropertys = await Property.find({ occupant: id })
+      .populate({ path: "owner" })
+      .populate({ path: "agreement" })
+      .populate({ path: "rents" })
+      .populate({ path: "notifications" });
+
+    if (!arrPropertys.length) successResponse(res, 204);
+    successResponse(res, 200, null, arrPropertys);
   } catch (error) {
     next(error);
   }
@@ -78,4 +96,5 @@ export {
   getOneProperty,
   updateProperty,
   deleteProperty,
+  getAllPropertyByOccupant,
 };

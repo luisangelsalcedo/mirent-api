@@ -1,17 +1,17 @@
 import Notification from "../models/notification.model.js";
 import { successResponse } from "../utils/index.js";
 
-const createNotificationByAgreement = async (req, res, next) => {
+const createNotification = async (req, res, next) => {
   try {
-    const notificacion = await Notification.createByAgreementStatics(req);
+    const notificacion = await Notification.createStatics(req);
     successResponse(res, 201, "notificacion created", notificacion);
   } catch (error) {
     next(error);
   }
 };
-const getAllNotificationByAgreement = async (req, res, next) => {
+const getAllNotification = async (req, res, next) => {
   try {
-    const arrNotices = await Notification.getAllByAgreementStatics(req);
+    const arrNotices = await Notification.getAllStatics(req);
     if (!arrNotices.length) successResponse(res, 204);
     else successResponse(res, 200, null, arrNotices);
   } catch (error) {
@@ -36,8 +36,8 @@ const updateNotification = async (req, res, next) => {
   }
 };
 export {
-  createNotificationByAgreement,
-  getAllNotificationByAgreement,
+  createNotification,
+  getAllNotification,
   getNotificacionById,
   updateNotification,
 };
