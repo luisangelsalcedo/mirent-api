@@ -8,12 +8,10 @@ cloudinary.config({
   secure: true,
 });
 
-export const destroyImgCloudinary = (cldID) => {
-  if (cldID) return false;
-  return new Promise((resolve, reject) => {
+export const destroyImgCloudinary = (cldID) =>
+  new Promise((resolve, reject) => {
     cloudinary.uploader.destroy(cldID, function (error, result) {
       if (error) reject(error);
       else resolve(result);
     });
   });
-};
