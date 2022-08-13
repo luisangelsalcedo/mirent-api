@@ -47,7 +47,7 @@ Set environment variables:
    ```
 2. **Get into the project directory** by executing the following command:
    ```
-   cd favs-api
+   cd mirent-api
    ```
 3. **Install all dependencies** by executing the following command:
    ```
